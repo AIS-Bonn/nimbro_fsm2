@@ -4,9 +4,9 @@
 #ifndef NIMBRO_FSM2_FSM_H
 #define NIMBRO_FSM2_FSM_H
 
-#include <variant>
 #include <memory>
 #include <iostream>
+#include <variant>
 
 #include <boost/hana/tuple.hpp>
 #include <boost/hana/set.hpp>
@@ -15,7 +15,7 @@
 #include <ros/time.h>
 
 #include "detail/type_name.h"
-#include "detail/variant_membership.h"
+#include "detail/is_defined.h"
 #include "introspection.h"
 
 namespace nimbro_fsm2
@@ -43,39 +43,41 @@ public:
 	class Transitions
 	{
 	public:
-		using Variant = std::variant<Stay, std::unique_ptr<SuccessorStates>...>;
-
 		static constexpr auto SuccessorStateSet = boost::hana::to_set(boost::hana::tuple_t<SuccessorStates...>);
+	};
 
-		// Constructor from specific state
-		template<class T>
-		constexpr Transitions(T&& state)
-		 : m_data{std::move(state)}
+	class Transition
+	{
+	public:
+		explicit Transition(const Stay& stay)
+		 : m_data{stay}
 		{}
 
 		operator std::unique_ptr<StateBase>() &&
 		{
-			return std::visit([](auto&& arg) -> std::unique_ptr<StateBase> {
-				if constexpr(std::is_same_v<std::decay_t<decltype(arg)>, Stay>)
-					return {};
-				else
-					return std::unique_ptr<StateBase>{arg.release()};
-			}, m_data);
+			return std::move(std::get<1>(m_data));
 		}
 
 		operator bool() const
 		{
 			return m_data.index() != 0;
 		}
+
+		static Transition _unchecked(std::unique_ptr<StateBase>&& state)
+		{ return Transition(std::move(state)); }
 	private:
-		Variant m_data;
+		explicit Transition(std::unique_ptr<StateBase>&& state)
+		 : m_data{std::move(state)}
+		{}
+
+		std::variant<Stay, std::unique_ptr<StateBase>> m_data;
 	};
 
 	template<class Derived, class TransitionSpec>
 	class State : public StateBase
 	{
 	public:
-		using Transition = TransitionSpec;
+		using Transitions = TransitionSpec;
 
 		static constexpr auto Name = detail::type_name<Derived>();
 
@@ -108,21 +110,33 @@ public:
 		template<class T, class ... Args>
 		Transition transit(Args&&... args)
 		{
-			if constexpr (detail::variant_has_type_v<std::unique_ptr<T>, typename Transition::Variant>)
+			namespace hana = boost::hana;
+
+			if constexpr (detail::is_defined_v<T>)
 			{
-				return std::make_unique<T>(std::forward<Args>(args)...);
+				if constexpr (hana::contains(TransitionSpec::SuccessorStateSet, hana::type_c<T>))
+				{
+					return Transition::_unchecked(std::make_unique<T>(std::forward<Args>(args)...));
+				}
+				else
+				{
+					static_assert(hana::contains(TransitionSpec::SuccessorStateSet, hana::type_c<T>),
+						"You tried to transit to a state not mentioned in your TransitionSpec"
+					);
+				}
 			}
 			else
 			{
-				static_assert(detail::variant_has_type_v<std::unique_ptr<T>, typename Transition::Variant>,
-					"You tried to transit to a state not mentioned in your TransitionSpec"
+				static_assert(detail::is_defined_v<T>,
+					"You tried to transit to a forward-declared state. "
+					"Please include the appropriate header in your .cpp file."
 				);
 			}
 		}
 
 		Transition stay()
 		{
-			return Stay{};
+			return Transition{Stay{}};
 		}
 
 		virtual void enter(DriverClass&)
@@ -150,7 +164,7 @@ public:
 			using State = typename decltype(state)::type;
 			std::cout << " - " << State::Name.c_str() << " trans [";
 
-			auto successorStates = State::Transition::SuccessorStateSet;
+			auto successorStates = State::Transitions::SuccessorStateSet;
 			boost::hana::for_each(successorStates, [](auto successorState) {
 				using SuccessorState = typename decltype(successorState)::type;
 				std::cout << SuccessorState::Name.c_str() << ", ";

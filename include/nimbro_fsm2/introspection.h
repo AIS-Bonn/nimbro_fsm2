@@ -12,6 +12,8 @@
 #include <boost/hana/difference.hpp>
 #include <boost/hana/union.hpp>
 
+#include "detail/is_defined.h"
+
 namespace nimbro_fsm2
 {
 
@@ -26,8 +28,12 @@ constexpr auto reachableStates()
 	auto visitor = hana::fix([](auto self, const auto& visited, auto x) {
 		// Find out which of the successor states we have not visited so far
 		using State = typename decltype(x)::type;
+		static_assert(detail::is_defined<State>::value,
+			"For introspection, you need to include *all* state headers! "
+			"See below for the state class that you need to include."
+		);
 
-		auto successorStates = State::Transition::SuccessorStateSet;
+		auto successorStates = State::Transitions::SuccessorStateSet;
 		auto newStates = hana::difference(successorStates, visited);
 
 		// Make them visited
