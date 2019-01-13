@@ -12,6 +12,8 @@
 #include <boost/hana/set.hpp>
 #include <boost/hana/for_each.hpp>
 
+#include <ros/time.h>
+
 #include "detail/type_name.h"
 #include "detail/variant_membership.h"
 #include "introspection.h"
@@ -23,7 +25,6 @@ template<class DriverClass>
 class FSM
 {
 public:
-
 	class StateBase
 	{
 	public:
@@ -87,6 +88,8 @@ public:
 		void doEnter(DriverClass& driver) override
 		{
 			std::cout << "Entering " << Name.c_str() << "\n";
+			m_enterTime = ros::Time::now();
+
 			Derived& derived = static_cast<Derived&>(*this);
 			derived.enter(driver);
 		}
@@ -95,6 +98,11 @@ public:
 		{
 			Derived& derived = static_cast<Derived&>(*this);
 			derived.leave(driver);
+		}
+
+		ros::Duration elapsedTime() const
+		{
+			return ros::Time::now() - m_enterTime;
 		}
 
 		template<class T, class ... Args>
@@ -117,13 +125,15 @@ public:
 			return Stay{};
 		}
 
-		virtual void enter(DriverClass& driver)
+		virtual void enter(DriverClass&)
 		{}
 
-		virtual void leave(DriverClass& driver)
+		virtual void leave(DriverClass&)
 		{}
 
 		virtual Transition execute(DriverClass& driver) = 0;
+	private:
+		ros::Time m_enterTime;
 	};
 
 

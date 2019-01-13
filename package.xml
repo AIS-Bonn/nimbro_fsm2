@@ -1,0 +1,12 @@
+<package format="2">
+	<name>nimbro_fsm2</name>
+	<description>C++17 Finite State Machine framework</description>
+	<version>0.0.1</version>
+	<license>BSD</license>
+	<maintainer email="max.schwarz@ais.uni-bonn.de">Max Schwarz</maintainer>
+
+	<buildtool_depend>catkin</buildtool_depend>
+	<depend>roscpp</depend>
+	<depend>catch_ros</depend>
+	<depend>rosfmt</depend>
+</package>
