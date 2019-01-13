@@ -14,6 +14,15 @@ namespace nimbro_fsm2
 namespace detail
 {
 
+// We use a pretty ugly hack here to get a string containing the type name:
+// Exploit that __PRETTY_FUNCTION__ shows type information.
+// inspired by ctti: https://github.com/Manu343726/ctti
+// and hana::experimental::type_name
+
+// Until gcc supports constexpr __PRETTY_FUNCTION__, the code below is very
+// ugly.
+// Bug: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66639
+
 template<class T>
 constexpr std::size_t get_name_length()
 {
