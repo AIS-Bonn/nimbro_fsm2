@@ -41,14 +41,14 @@ Driving::Transition Driving::execute(Driver& driver)
 		return transit<Crashed>();
 	}
 
-	return FSM::Stay{};
+	return stay();
 }
 
 // CRASHED
 Crashed::Transition Crashed::execute(Driver& driver)
 {
 	std::cout << "It hurts!\n";
-	return FSM::Stay{};
+	return stay();
 }
 
 }
@@ -58,17 +58,6 @@ int main(int argc, char** argv)
 {
 	my_fsm::Driver driver;
 	my_fsm::FSM fsm(driver);
-
-	{
-		namespace hana = boost::hana;
-
-		std::cout << "States:\n";
-		auto stateList = nimbro_fsm2::reachableStates<my_fsm::Idle>();
-		hana::for_each(stateList, [](auto state){
-			using State = typename decltype(state)::type;
-			std::cout << " - " << State::Name.c_str() << "\n";
-		});
-	}
 
 	fsm.start<my_fsm::Idle>();
 

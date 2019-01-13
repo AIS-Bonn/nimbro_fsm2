@@ -13,21 +13,11 @@
 #include <boost/hana/for_each.hpp>
 
 #include "detail/type_name.h"
+#include "detail/variant_membership.h"
 #include "introspection.h"
 
 namespace nimbro_fsm2
 {
-
-namespace detail
-{
-
-template <typename T, typename Variant>
-struct has_type;
-
-template <typename T, typename... Us>
-struct has_type<T, std::variant<Us...>> : std::disjunction<std::is_same<T, Us>...> {};
-
-}
 
 template<class DriverClass>
 class FSM
@@ -53,7 +43,6 @@ public:
 	{
 	public:
 		using Variant = std::variant<Stay, std::unique_ptr<SuccessorStates>...>;
-		using Tuple = std::tuple<SuccessorStates...>;
 
 		static constexpr auto SuccessorStateSet = boost::hana::to_set(boost::hana::tuple_t<SuccessorStates...>);
 
@@ -111,16 +100,21 @@ public:
 		template<class T, class ... Args>
 		Transition transit(Args&&... args)
 		{
-			if constexpr (detail::has_type<std::unique_ptr<T>, typename Transition::Variant>::value)
+			if constexpr (detail::variant_has_type_v<std::unique_ptr<T>, typename Transition::Variant>)
 			{
 				return std::make_unique<T>(std::forward<Args>(args)...);
 			}
 			else
 			{
-				static_assert(detail::has_type<std::unique_ptr<T>, typename Transition::Variant>::value,
+				static_assert(detail::variant_has_type_v<std::unique_ptr<T>, typename Transition::Variant>,
 					"You tried to transit to a state not mentioned in your TransitionSpec"
 				);
 			}
+		}
+
+		Transition stay()
+		{
+			return Stay{};
 		}
 
 		virtual void enter(DriverClass& driver)
