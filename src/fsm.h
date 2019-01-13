@@ -10,8 +10,10 @@
 
 #include <boost/hana/tuple.hpp>
 #include <boost/hana/set.hpp>
+#include <boost/hana/for_each.hpp>
 
 #include "detail/type_name.h"
+#include "introspection.h"
 
 namespace nimbro_fsm2
 {
@@ -135,9 +137,24 @@ public:
 	 : m_driver(driver)
 	{}
 
-	void setState(std::unique_ptr<StateBase>&& state)
+	template<class StartState, class ... Args>
+	void start(Args ... args)
 	{
-		m_state = std::move(state);
+		std::cout << "Finite State Machine with states:\n";
+		auto stateList = reachableStates<StartState>();
+		boost::hana::for_each(stateList, [](auto state){
+			using State = typename decltype(state)::type;
+			std::cout << " - " << State::Name.c_str() << " trans [";
+
+			auto successorStates = State::Transition::SuccessorStateSet;
+			boost::hana::for_each(successorStates, [](auto successorState) {
+				using SuccessorState = typename decltype(successorState)::type;
+				std::cout << SuccessorState::Name.c_str() << ", ";
+			});
+			std::cout << "]\n";
+		});
+
+		m_state = std::make_unique<StartState>(std::forward(args)...);
 		m_state->doEnter(m_driver);
 	}
 

@@ -70,7 +70,7 @@ int main(int argc, char** argv)
 		});
 	}
 
-	fsm.setState(std::make_unique<my_fsm::Idle>());
+	fsm.start<my_fsm::Idle>();
 
 	while(1)
 	{
