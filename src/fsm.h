@@ -7,78 +7,23 @@
 #include <variant>
 #include <memory>
 #include <iostream>
-#include <typeinfo>
 
-#include "ctti/nameof.hpp"
+#include <boost/hana/tuple.hpp>
+#include <boost/hana/set.hpp>
+
+#include "detail/type_name.h"
 
 namespace nimbro_fsm2
 {
 
 namespace detail
 {
+
 template <typename T, typename Variant>
 struct has_type;
 
 template <typename T, typename... Us>
 struct has_type<T, std::variant<Us...>> : std::disjunction<std::is_same<T, Us>...> {};
-
-struct compile_time_string
-{
-	constexpr compile_time_string(const char* start, const char* end)
-	 : m_data{}
-	{
-		int i = 0;
-		for(; i < sizeof(m_data)-1 && start != end; ++i)
-			m_data[i] = *(start++);
-		m_data[i] = 0;
-	}
-
-	char m_data[256];
-};
-
-inline std::ostream& operator<<(std::ostream& o, const compile_time_string& s)
-{
-	o << s.m_data;
-	return o;
-}
-
-constexpr const char* UNKNOWN_NAME = "unknown";
-
-template<class T>
-constexpr compile_time_string get_name()
-{
-	// ... get_name<T>() [with T = MyType]
-	const char* p = __PRETTY_FUNCTION__;
-
-	// Skip to "= "
-	while(*p && *p++ != '=');
-	while(*p == ' ')
-		*p++;
-
-	// Search for end
-	if(*p)
-	{
-		const char* p2 = p;
-		int count = 1;
-		for (;;++p2)
-		{
-			switch (*p2)
-			{
-			case '[':
-				++count;
-				break;
-			case ']':
-				--count;
-				if (!count)
-					return compile_time_string{p, p2};
-			case 0:
-				return {UNKNOWN_NAME, UNKNOWN_NAME+7};
-			}
-		}
-	}
-
-	return {UNKNOWN_NAME, UNKNOWN_NAME+7};
-}
 
 }
 
@@ -106,6 +51,9 @@ public:
 	{
 	public:
 		using Variant = std::variant<Stay, std::unique_ptr<SuccessorStates>...>;
+		using Tuple = std::tuple<SuccessorStates...>;
+
+		static constexpr auto SuccessorStateSet = boost::hana::to_set(boost::hana::tuple_t<SuccessorStates...>);
 
 		// Constructor from specific state
 		template<class T>
@@ -137,7 +85,7 @@ public:
 	public:
 		using Transition = TransitionSpec;
 
-		static constexpr detail::compile_time_string Name = detail::get_name<Derived>();
+		static constexpr auto Name = detail::type_name<Derived>();
 
 		std::unique_ptr<StateBase> doExecute(DriverClass& driver) override
 		{
@@ -147,8 +95,7 @@ public:
 
 		void doEnter(DriverClass& driver) override
 		{
-			std::cout << "Entering " << Name << "\n";
-// 			std::cout << "Entering " << typeid(*this).name() << "\n";
+			std::cout << "Entering " << Name.c_str() << "\n";
 			Derived& derived = static_cast<Derived&>(*this);
 			derived.enter(driver);
 		}

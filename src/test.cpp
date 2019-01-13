@@ -2,10 +2,13 @@
 // Author: Max Schwarz <max.schwarz@ais.uni-bonn.de>
 
 #include "test.h"
+#include "introspection.h"
 
 #include <iostream>
 #include <chrono>
 #include <thread>
+
+#include <boost/hana/for_each.hpp>
 
 namespace my_fsm
 {
@@ -55,6 +58,17 @@ int main(int argc, char** argv)
 {
 	my_fsm::Driver driver;
 	my_fsm::FSM fsm(driver);
+
+	{
+		namespace hana = boost::hana;
+
+		std::cout << "States:\n";
+		auto stateList = nimbro_fsm2::reachableStates<my_fsm::Idle>();
+		hana::for_each(stateList, [](auto state){
+			using State = typename decltype(state)::type;
+			std::cout << " - " << State::Name.c_str() << "\n";
+		});
+	}
 
 	fsm.setState(std::make_unique<my_fsm::Idle>());
 
