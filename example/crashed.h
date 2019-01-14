@@ -8,11 +8,14 @@
 
 namespace my_fsm
 {
+class Idle;
 
-class Crashed : public FSM::State<Crashed, FSM::Transitions<>>
+class Crashed : public FSM::State<Crashed, FSM::Transitions<Idle>>
 {
 public:
 	virtual Transition execute(Driver& driver) override;
+private:
+	int m_count = 0;
 };
 
 }

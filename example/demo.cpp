@@ -11,6 +11,9 @@
 #include <chrono>
 #include <iostream>
 
+#include <ros/init.h>
+#include <ros/node_handle.h>
+
 namespace my_fsm
 {
 
@@ -23,8 +26,14 @@ void Driver::drive(double vx, double vy)
 
 int main(int argc, char** argv)
 {
+	ros::init(argc, argv, "demo", ros::init_options::NoSigintHandler);
+	ros::NodeHandle nh;
+
 	my_fsm::Driver driver;
 	my_fsm::FSM fsm(driver);
+
+	std::cout << "Here is a dot graph of my states:\n";
+	fsm.dumpDot<my_fsm::Idle>();
 
 	//[StateName]
 	std::cout << "Starting in state: " << my_fsm::Idle::Name.c_str() << "\n";
