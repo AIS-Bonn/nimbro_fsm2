@@ -1,11 +1,6 @@
 
 image: xqms/ros:ais
 
-before_script:
-- apk update
-- apk add doxygen
-- pip install jinja2 Pygments
-
 ## Uncomment the following line if you use graphviz dot graphs
 #- apk add ttf-freefont graphviz
 catkin_build:
@@ -37,6 +32,10 @@ catkin_tools_tests:
 
 pages:
   image: python:3-alpine
+  before_script:
+  - apk update
+  - apk add doxygen
+  - pip install jinja2 Pygments
   script:
   - git clone git://github.com/mosra/m.css
   - mkdir build
