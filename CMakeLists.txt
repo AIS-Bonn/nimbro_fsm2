@@ -7,6 +7,8 @@ find_package(catkin REQUIRED COMPONENTS
 	rosfmt
 	catch_ros
 	message_generation
+)
+
 add_message_files(FILES
 	StateInfo.msg
 	StateList.msg
