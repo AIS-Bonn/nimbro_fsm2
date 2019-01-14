@@ -38,7 +38,7 @@ pages:
   before_script:
   - apk update
   - apk add doxygen
-  - apk install git
+  - apk add git
   - pip install jinja2 Pygments
   script:
   - git clone --depth 1 git://github.com/mosra/m.css
