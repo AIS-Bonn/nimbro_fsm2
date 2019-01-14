@@ -1,6 +1,9 @@
 
 image: xqms/ros:ais
 
+variables:
+  USE_ROSDEP: "true"
+
 ## Uncomment the following line if you use graphviz dot graphs
 #- apk add ttf-freefont graphviz
 catkin_build:
