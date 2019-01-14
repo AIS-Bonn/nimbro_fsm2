@@ -38,9 +38,10 @@ pages:
   before_script:
   - apk update
   - apk add doxygen
+  - apk install git
   - pip install jinja2 Pygments
   script:
-  - git clone git://github.com/mosra/m.css
+  - git clone --depth 1 git://github.com/mosra/m.css
   - mkdir build
   - m.css/doxygen/dox2html5.py Doxyfile-mcss
   - mv build/doc-mcss/html/ public/
