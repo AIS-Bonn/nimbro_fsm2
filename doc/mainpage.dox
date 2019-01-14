@@ -1,0 +1,30 @@
+
+/** @mainpage nimbro_fsm2
+
+* *C++17 framework for Finite State Machines with focus on compile-time verification.*
+
+This is the documentation of the nimbro_fsm2 package, your friend for writing
+finite state machines, especially for robotics.
+
+Looking for quick API reference? Take a look at the @ref nimbro_fsm2::FSM::State
+class, which is the heart of the framework.
+
+@section mainpage-High-level High-level overview
+
+In robotics, we usually have the property that high-level state is also
+responsible for control. For example, it is convenient to specify a controller
+for approaching an object directly in the definition of the respective
+approach state.
+
+For this reason, nimbro_fsm2 is not event-driven. Rather, it uses a polling
+design, where the active state gets asked in fixed intervals what the next
+action is going to be.
+
+@snippet driving.cpp execute
+
+Ignoring the specifics for a moment, this state defines a behavior that
+continuously generates driving commands until a number if iterations is reached
+--- or the vehicle crashes. In each of these cases, a state transition to
+another state is triggered.
+
+*/
