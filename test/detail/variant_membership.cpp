@@ -22,4 +22,7 @@ TEST_CASE("variant_membership")
 	static_assert(nimbro_fsm2::detail::variant_has_type_v<TestA, Variant>);
 	static_assert(nimbro_fsm2::detail::variant_has_type_v<TestB, Variant>);
 	static_assert(!nimbro_fsm2::detail::variant_has_type_v<TestC, Variant>);
+
+	// Dummy assertion to make this test case count
+	REQUIRE(true);
 }
