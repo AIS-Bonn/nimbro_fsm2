@@ -17,6 +17,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 include_directories(${catkin_INCLUDE_DIRS} include)
 
+add_subdirectory(example)
+
 if(CATKIN_ENABLE_TESTING)
 	catch_add_test(unit_tests
 		test/detail/type_name.cpp
