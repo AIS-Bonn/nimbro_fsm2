@@ -6,6 +6,15 @@ find_package(catkin REQUIRED COMPONENTS
 	roscpp
 	rosfmt
 	catch_ros
+	message_generation
+add_message_files(FILES
+	StateInfo.msg
+	StateList.msg
+	Status.msg
+)
+
+generate_messages(DEPENDENCIES
+	std_msgs
 )
 
 catkin_package(
