@@ -10,6 +10,7 @@ before_script:
 #- apk add ttf-freefont graphviz
 catkin_build:
   stage: build
+  script:
     - git clone https://git.ais.uni-bonn.de/nimbroshared/ros_gitlab_ci.git
     - source ros_gitlab_ci/gitlab-ci.bash
     - catkin build --summarize --no-status --force-color
