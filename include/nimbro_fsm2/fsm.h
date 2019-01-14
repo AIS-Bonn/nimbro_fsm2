@@ -32,6 +32,8 @@ template<class DriverClass>
 class FSM
 {
 public:
+	class Transition;
+
 	/**
 	 * @brief Abstract base class for states
 	 *
@@ -43,7 +45,7 @@ public:
 	public:
 		virtual ~StateBase() {}
 
-		virtual std::unique_ptr<StateBase> doExecute(DriverClass& driver) = 0;
+		virtual Transition doExecute(DriverClass& driver) = 0;
 		virtual void doEnter(DriverClass& driver) = 0;
 		virtual void doLeave(DriverClass& driver) = 0;
 	};
@@ -153,7 +155,7 @@ public:
 		 **/
 		static constexpr auto Name = detail::type_name<Derived>();
 
-		std::unique_ptr<StateBase> doExecute(DriverClass& driver) override
+		Transition doExecute(DriverClass& driver) override
 		{
 			Derived& derived = static_cast<Derived&>(*this);
 			return derived.execute(driver);
@@ -305,7 +307,7 @@ public:
 		if(!m_state)
 			return;
 
-		std::unique_ptr<StateBase> nextState = m_state->doExecute(m_driver);
+		Transition nextState = m_state->doExecute(m_driver);
 
 		if(nextState)
 		{
