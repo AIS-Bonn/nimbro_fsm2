@@ -17,13 +17,13 @@
 namespace nimbro_fsm2
 {
 
-namespace hana = boost::hana;
-
-template<class StartState>
+template<class ... StartStates>
 constexpr auto reachableStates()
 {
-	auto startState = hana::type_c<StartState>;
-	auto startSet = hana::make_set(startState);
+	namespace hana = boost::hana;
+
+	auto startStates = hana::tuple_c<StartStates...>;
+	auto startSet = hana::to_set(startStates);
 
 	auto visitor = hana::fix([](auto self, const auto& visited, auto x) {
 		// Find out which of the successor states we have not visited so far
@@ -48,7 +48,7 @@ constexpr auto reachableStates()
 		return result;
 	});
 
-	auto state_set = visitor(startSet, startState);
+	auto state_set = hana::fold(startSet, startSet, visitor);
 
 	return hana::to_tuple(state_set);
 }

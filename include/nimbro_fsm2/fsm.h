@@ -291,6 +291,11 @@ public:
 	 : m_driver(driver)
 	{}
 
+	template<class ... StartStates>
+	void initialize()
+	{
+	}
+
 	template<class StartState, class ... Args>
 	void start(Args ... args)
 	{
