@@ -25,6 +25,7 @@
 #include <nimbro_fsm2/Info.h>
 #include <nimbro_fsm2/Status.h>
 
+#include <rosfmt/rosfmt.h>
 #include <fmt/format.h>
 
 #include "detail/type_name.h"
@@ -61,6 +62,7 @@ public:
 		virtual Transition doExecute(DriverClass& driver) = 0;
 		virtual void doEnter(DriverClass& driver) = 0;
 		virtual void doLeave(DriverClass& driver) = 0;
+		virtual std::string collectDisplayMessages() = 0;
 	};
 
 	class Stay
@@ -161,6 +163,8 @@ public:
 		//! Transitions type for compile-time lookup
 		using Transitions = TransitionSpec;
 
+		//! @name Information
+		//@{
 		/**
 		 * @brief State name
 		 *
@@ -172,27 +176,6 @@ public:
 		 **/
 		static constexpr auto Name = detail::type_name<Derived>();
 
-		Transition doExecute(DriverClass& driver) override
-		{
-			Derived& derived = static_cast<Derived&>(*this);
-			return derived.execute(driver);
-		}
-
-		void doEnter(DriverClass& driver) override
-		{
-			std::cout << "Entering " << Name.c_str() << "\n";
-			m_enterTime = ros::Time::now();
-
-			Derived& derived = static_cast<Derived&>(*this);
-			derived.enter(driver);
-		}
-
-		void doLeave(DriverClass& driver) override
-		{
-			Derived& derived = static_cast<Derived&>(*this);
-			derived.leave(driver);
-		}
-
 		/**
 		 * @brief Elapsed time
 		 *
@@ -203,7 +186,32 @@ public:
 		{
 			return ros::Time::now() - m_enterTime;
 		}
+		//@}
 
+		//! @name Logging & visualization
+		//@{
+		/**
+		 * @brief Display values during state execution
+		 *
+		 * With this method you can visualize high-frequency information from
+		 * your state execution method. It uses the @p fmt syntax for format
+		 * strings. All emitted display strings for one FSM cycle are aggregated
+		 * and displayed to the user in the @p nimbro_fsm2 GUI. Additionally,
+		 * the last collected messages are displayed at state exit, so that one
+		 * can more easily reason about the conditions that led to the
+		 * transition. Example:
+		 *
+		 * @snippet driving.cpp display
+		 **/
+		template<class ... Args>
+		void display(const std::string& formatString, Args&& ... args)
+		{
+			m_displayStream << fmt::format(formatString, std::forward<Args>(args)...) << "\n";
+		}
+		//@}
+
+		//! @name Actions
+		//@{
 		/**
 		 * @brief Perform state transition
 		 *
@@ -266,6 +274,7 @@ public:
 		{
 			return Transition{Stay{}};
 		}
+		//@}
 
 		//! @name Hooks
 		//@{
@@ -290,7 +299,35 @@ public:
 		virtual Transition execute(DriverClass& driver) = 0;
 		//@}
 	private:
+		Transition doExecute(DriverClass& driver) override
+		{
+			Derived& derived = static_cast<Derived&>(*this);
+			return derived.execute(driver);
+		}
+
+		void doEnter(DriverClass& driver) override
+		{
+			m_enterTime = ros::Time::now();
+
+			Derived& derived = static_cast<Derived&>(*this);
+			derived.enter(driver);
+		}
+
+		void doLeave(DriverClass& driver) override
+		{
+			Derived& derived = static_cast<Derived&>(*this);
+			derived.leave(driver);
+		}
+
+		std::string collectDisplayMessages() override
+		{
+			std::string ret = m_displayStream.str();
+			m_displayStream.str({});
+			return ret;
+		}
+
 		ros::Time m_enterTime;
+		std::stringstream m_displayStream;
 	};
 
 
@@ -339,7 +376,6 @@ public:
 				using SuccessorState = typename decltype(successorState)::type;
 				ss << fmt::format(" {},", SuccessorState::Name.c_str());
 			});
-			ss << "]\n";
 			ROS_INFO_STREAM(ss.str());
 		});
 
@@ -365,28 +401,23 @@ public:
 	}
 
 	/**
-	 * @brief Start the FSM
+	 * @brief Set FSM state
 	 *
 	 * This method is used to enter a specific state, continuing execution from
 	 * there. Any arguments are forwarded to the constructor of the state.
 	 *
-	 * Example: @snippet demo.cpp start
+	 * Example: @snippet demo.cpp setState
 	 **/
-	template<class StartState, class ... Args>
-	void start(Args ... args)
+	template<class State, class ... Args>
+	void setState(Args && ... args)
 	{
-		m_state = std::make_unique<StartState>(std::forward(args)...);
-		m_stateLabel = StartState::Name.c_str();
-		m_state->doEnter(m_driver);
-
-		// reset history
-		{
-			m_history.clear();
-			StateStatus stateStatus;
-			stateStatus.name = m_stateLabel;
-			stateStatus.start = ros::Time::now();
-			m_history.push_back(std::move(stateStatus));
-		}
+// 		auto state = static_cast<std::unique_ptr<StateBase>>(
+//
+// 		);
+		switchState(
+			std::make_unique<State>(std::forward<Args>(args)...),
+			State::Name.c_str()
+		);
 	}
 
 	template<class StartState>
@@ -431,24 +462,16 @@ public:
 		m_history.back().end = ros::Time::now();
 
 		Transition nextState = m_state->doExecute(m_driver);
+		std::string messages = m_state->collectDisplayMessages();
 
-		if(nextState)
-		{
-			m_state->doLeave(m_driver);
-			m_stateLabel = nextState.label();
-			m_state = std::move(nextState);
-			m_state->doEnter(m_driver);
-
-			StateStatus stateStatus;
-			stateStatus.name = m_stateLabel;
-			stateStatus.start = stateStatus.end = ros::Time::now();
-			m_history.push_back(std::move(stateStatus));
-		}
+		if(!messages.empty() && messages.back() == '\n')
+			messages.pop_back();
 
 		// Publish status msg
 		{
 			Status status;
 			status.current_state = m_stateLabel;
+			status.display_messages = messages;
 			status.paused = false;
 			status.history.reserve(m_history.size());
 			std::copy(m_history.begin(), m_history.end(),
@@ -457,9 +480,41 @@ public:
 
 			m_pub_status.publish(status);
 		}
+
+		if(nextState)
+		{
+			if(!messages.empty())
+			{
+				ROSFMT_INFO("Last display messages of state {}:", m_stateLabel);
+				ROSFMT_INFO("{}", messages);
+			}
+
+			const char* label = nextState.label();
+			switchState(std::move(nextState), label);
+		}
 	}
 
 private:
+	void switchState(std::unique_ptr<StateBase>&& state, const char* label)
+	{
+		if(m_state)
+		{
+			ROSFMT_INFO("Leaving state {}", m_stateLabel);
+			m_state->doLeave(m_driver);
+		}
+
+		m_state = std::move(state);
+		m_stateLabel = label;
+
+		ROSFMT_INFO("Entering state {}", m_stateLabel);
+		m_state->doEnter(m_driver);
+
+		StateStatus stateStatus;
+		stateStatus.name = m_stateLabel;
+		stateStatus.start = stateStatus.end = ros::Time::now();
+		m_history.push_back(std::move(stateStatus));
+	}
+
 	DriverClass& m_driver;
 	std::unique_ptr<StateBase> m_state;
 	const char* m_stateLabel;

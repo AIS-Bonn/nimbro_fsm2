@@ -43,9 +43,9 @@ int main(int argc, char** argv)
 	std::cout << "Starting in state: " << my_fsm::Idle::Name.c_str() << "\n";
 	//[StateName]
 
-	//[start]
-	fsm.start<my_fsm::Idle>();
-	//[start]
+	//[setState]
+	fsm.setState<my_fsm::Idle>();
+	//[setState]
 
 	while(1)
 	{

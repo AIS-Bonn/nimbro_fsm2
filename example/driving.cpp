@@ -21,7 +21,13 @@ void Driving::enter(Driver& driver)
 //[execute]
 Transition Driving::execute(Driver& driver)
 {
-	if(std::bernoulli_distribution{0.2}(m_randomGenerator))
+	//[display]
+	std::uniform_real_distribution<float> crashDistribution(0.0, 1.0);
+	float crashValue = crashDistribution(m_randomGenerator);
+	display("crashValue: {}", crashValue);
+	//[display]
+
+	if(crashValue > 0.8)
 	{
 		std::cout << "Didn't see that tree coming :-(\n";
 		return transit<Crashed>();
