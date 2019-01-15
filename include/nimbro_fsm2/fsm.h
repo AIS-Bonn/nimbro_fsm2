@@ -231,7 +231,7 @@ public:
 			{
 				if constexpr (hana::contains(TransitionSpec::SuccessorStateSet, hana::type_c<T>))
 				{
-					return Transition::_unchecked(std::make_unique<T>(std::forward<Args>(args)...), Name.c_str());
+					return Transition::_unchecked(std::make_unique<T>(std::forward<Args>(args)...), T::Name.c_str());
 				}
 				else
 				{
