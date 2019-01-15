@@ -88,7 +88,7 @@ public:
 	{
 	public:
 		explicit Transition(const Stay& stay)
-		 : m_data{stay}
+		 : m_data{stay}, m_label{"Stay"}
 		{}
 
 		/**
@@ -108,19 +108,23 @@ public:
 		 * This returns true iff this is a true transition i.e. not
 		 * @ref State::stay.
 		 **/
-		operator bool() const
+		constexpr operator bool() const
 		{
 			return m_data.index() != 0;
 		}
 
-		static Transition _unchecked(std::unique_ptr<StateBase>&& state)
-		{ return Transition(std::move(state)); }
+		static Transition _unchecked(std::unique_ptr<StateBase>&& state, const char* label)
+		{ return Transition(std::move(state), label); }
+
+		constexpr const char* label() const
+		{ return m_label; }
 	private:
-		explicit Transition(std::unique_ptr<StateBase>&& state)
-		 : m_data{std::move(state)}
+		explicit Transition(std::unique_ptr<StateBase>&& state, const char* label)
+		 : m_data{std::move(state)}, m_label{label}
 		{}
 
 		std::variant<Stay, std::unique_ptr<StateBase>> m_data;
+		const char* m_label;
 	};
 
 	/**
@@ -220,7 +224,7 @@ public:
 			{
 				if constexpr (hana::contains(TransitionSpec::SuccessorStateSet, hana::type_c<T>))
 				{
-					return Transition::_unchecked(std::make_unique<T>(std::forward<Args>(args)...));
+					return Transition::_unchecked(std::make_unique<T>(std::forward<Args>(args)...), Name.c_str());
 				}
 				else
 				{
@@ -305,6 +309,7 @@ public:
 		});
 
 		m_state = std::make_unique<StartState>(std::forward(args)...);
+		m_stateLabel = StartState::Name.c_str();
 		m_state->doEnter(m_driver);
 	}
 
@@ -352,6 +357,7 @@ public:
 		if(nextState)
 		{
 			m_state->doLeave(m_driver);
+			m_stateLabel = nextState.label();
 			m_state = std::move(nextState);
 			m_state->doEnter(m_driver);
 		}
@@ -360,6 +366,7 @@ public:
 private:
 	DriverClass& m_driver;
 	std::unique_ptr<StateBase> m_state;
+	const char* m_stateLabel;
 };
 
 }
