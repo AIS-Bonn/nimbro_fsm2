@@ -16,7 +16,14 @@
 #include <boost/hana/zip.hpp>
 #include <boost/hana/at_key.hpp>
 
+#include <boost/circular_buffer.hpp>
+
 #include <ros/time.h>
+#include <ros/node_handle.h>
+#include <ros/publisher.h>
+
+#include <nimbro_fsm2/Info.h>
+#include <nimbro_fsm2/Status.h>
 
 #include <fmt/format.h>
 
@@ -287,13 +294,39 @@ public:
 	};
 
 
-	explicit FSM(DriverClass& driver)
+	explicit FSM(DriverClass& driver, const ros::NodeHandle& nh = {"~"})
 	 : m_driver(driver)
-	{}
+	 , m_nh(nh)
+	{
+		m_pub_info = m_nh.advertise<Info>("info", 1, true);
+		m_pub_status = m_nh.advertise<Status>("status", 5);
+	}
 
 	template<class ... StartStates>
 	void initialize()
 	{
+		namespace hana = boost::hana;
+
+		// Send out & latch Info message
+		Info info;
+
+		constexpr auto stateList = reachableStates<StartStates...>();
+		hana::for_each(stateList, [&](auto state){
+			using State = typename decltype(state)::type;
+
+			StateInfo stateInfo;
+			stateInfo.name = State::Name.c_str();
+
+			hana::for_each(State::Transitions::SuccessorStateSet, [&](auto suc){
+				using Suc = typename decltype(suc)::type;
+
+				stateInfo.successors.emplace_back(Suc::Name.c_str());
+			});
+
+			info.states.push_back(std::move(stateInfo));
+		});
+
+		m_pub_info.publish(info);
 	}
 
 	template<class StartState, class ... Args>
@@ -316,6 +349,15 @@ public:
 		m_state = std::make_unique<StartState>(std::forward(args)...);
 		m_stateLabel = StartState::Name.c_str();
 		m_state->doEnter(m_driver);
+
+		// reset history
+		{
+			m_history.clear();
+			StateStatus stateStatus;
+			stateStatus.name = m_stateLabel;
+			stateStatus.start = ros::Time::now();
+			m_history.push_back(std::move(stateStatus));
+		}
 	}
 
 	template<class StartState>
@@ -357,6 +399,8 @@ public:
 		if(!m_state)
 			return;
 
+		m_history.back().end = ros::Time::now();
+
 		Transition nextState = m_state->doExecute(m_driver);
 
 		if(nextState)
@@ -365,6 +409,24 @@ public:
 			m_stateLabel = nextState.label();
 			m_state = std::move(nextState);
 			m_state->doEnter(m_driver);
+
+			StateStatus stateStatus;
+			stateStatus.name = m_stateLabel;
+			stateStatus.start = stateStatus.end = ros::Time::now();
+			m_history.push_back(std::move(stateStatus));
+		}
+
+		// Publish status msg
+		{
+			Status status;
+			status.current_state = m_stateLabel;
+			status.paused = false;
+			status.history.reserve(m_history.size());
+			std::copy(m_history.begin(), m_history.end(),
+				std::back_inserter(status.history)
+			);
+
+			m_pub_status.publish(status);
 		}
 	}
 
@@ -372,6 +434,13 @@ private:
 	DriverClass& m_driver;
 	std::unique_ptr<StateBase> m_state;
 	const char* m_stateLabel;
+
+	ros::NodeHandle m_nh;
+	ros::Publisher m_pub_info;
+	ros::Publisher m_pub_status;
+
+	boost::circular_buffer<StateStatus> m_history{100};
+	Status m_statusMsg;
 };
 
 }

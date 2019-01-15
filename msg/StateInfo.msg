@@ -1,2 +1,2 @@
 string name
-string[] successor
+string[] successors
