@@ -314,9 +314,9 @@ public:
 	 *
 	 * This call is used to initialize the compile-time introspection of your
 	 * states. It should be called with all possible entry states as template
-	 * parameters. Example:
+	 * parameters.
 	 *
-	 * @snippet demo.cpp initialize
+	 * Example: @snippet demo.cpp initialize
 	 *
 	 * @note All reachable states need to be fully declared (i.e. not only
 	 *   forward-declared) for this to work.
@@ -369,9 +369,8 @@ public:
 	 *
 	 * This method is used to enter a specific state, continuing execution from
 	 * there. Any arguments are forwarded to the constructor of the state.
-	 * Example:
 	 *
-	 * @snippet demo.cpp start
+	 * Example: @snippet demo.cpp start
 	 **/
 	template<class StartState, class ... Args>
 	void start(Args ... args)
