@@ -11,7 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 add_message_files(FILES
 	StateInfo.msg
-	StateList.msg
+	Info.msg
+	StateStatus.msg
 	Status.msg
 )
 
