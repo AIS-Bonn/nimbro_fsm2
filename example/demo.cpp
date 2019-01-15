@@ -32,6 +32,8 @@ int main(int argc, char** argv)
 	my_fsm::Driver driver;
 	my_fsm::FSM fsm(driver);
 
+	fsm.initialize<my_fsm::Idle>();
+
 	std::cout << "Here is a dot graph of my states:\n";
 	fsm.dumpDot<my_fsm::Idle>();
 
