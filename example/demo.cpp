@@ -32,7 +32,9 @@ int main(int argc, char** argv)
 	my_fsm::Driver driver;
 	my_fsm::FSM fsm(driver);
 
+	//[initialize]
 	fsm.initialize<my_fsm::Idle>();
+	//[initialize]
 
 	std::cout << "Here is a dot graph of my states:\n";
 	fsm.dumpDot<my_fsm::Idle>();
@@ -41,7 +43,9 @@ int main(int argc, char** argv)
 	std::cout << "Starting in state: " << my_fsm::Idle::Name.c_str() << "\n";
 	//[StateName]
 
+	//[start]
 	fsm.start<my_fsm::Idle>();
+	//[start]
 
 	while(1)
 	{

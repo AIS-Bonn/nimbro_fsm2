@@ -294,6 +294,13 @@ public:
 	};
 
 
+	/**
+	 * @brief Constructor
+	 *
+	 * @param driver Reference to an instance of your driver class
+	 * @param nh ROS NodeHandle for the ROS API. The default uses your node's
+	 *           private scope.
+	 **/
 	explicit FSM(DriverClass& driver, const ros::NodeHandle& nh = {"~"})
 	 : m_driver(driver)
 	 , m_nh(nh)
@@ -302,15 +309,43 @@ public:
 		m_pub_status = m_nh.advertise<Status>("status", 5);
 	}
 
+	/**
+	 * @brief Initialize the type system
+	 *
+	 * This call is used to initialize the compile-time introspection of your
+	 * states. It should be called with all possible entry states as template
+	 * parameters. Example:
+	 *
+	 * @snippet demo.cpp initialize
+	 *
+	 * @note All reachable states need to be fully declared (i.e. not only
+	 *   forward-declared) for this to work.
+	 **/
 	template<class ... StartStates>
 	void initialize()
 	{
 		namespace hana = boost::hana;
 
+		auto stateList = reachableStates<StartStates...>();
+
+		ROS_INFO("Finite State Machine with states:");
+		boost::hana::for_each(stateList, [](auto state){
+			using State = typename decltype(state)::type;
+			std::stringstream ss;
+			ss << fmt::format(" - {} trans [", State::Name.c_str());
+
+			auto successorStates = State::Transitions::SuccessorStateSet;
+			boost::hana::for_each(successorStates, [&](auto successorState) {
+				using SuccessorState = typename decltype(successorState)::type;
+				ss << fmt::format(" {},", SuccessorState::Name.c_str());
+			});
+			ss << "]\n";
+			ROS_INFO_STREAM(ss.str());
+		});
+
 		// Send out & latch Info message
 		Info info;
 
-		constexpr auto stateList = reachableStates<StartStates...>();
 		hana::for_each(stateList, [&](auto state){
 			using State = typename decltype(state)::type;
 
@@ -329,23 +364,18 @@ public:
 		m_pub_info.publish(info);
 	}
 
+	/**
+	 * @brief Start the FSM
+	 *
+	 * This method is used to enter a specific state, continuing execution from
+	 * there. Any arguments are forwarded to the constructor of the state.
+	 * Example:
+	 *
+	 * @snippet demo.cpp start
+	 **/
 	template<class StartState, class ... Args>
 	void start(Args ... args)
 	{
-		std::cout << "Finite State Machine with states:\n";
-		auto stateList = reachableStates<StartState>();
-		boost::hana::for_each(stateList, [](auto state){
-			using State = typename decltype(state)::type;
-			std::cout << " - " << State::Name.c_str() << " trans [";
-
-			auto successorStates = State::Transitions::SuccessorStateSet;
-			boost::hana::for_each(successorStates, [](auto successorState) {
-				using SuccessorState = typename decltype(successorState)::type;
-				std::cout << SuccessorState::Name.c_str() << ", ";
-			});
-			std::cout << "]\n";
-		});
-
 		m_state = std::make_unique<StartState>(std::forward(args)...);
 		m_stateLabel = StartState::Name.c_str();
 		m_state->doEnter(m_driver);
