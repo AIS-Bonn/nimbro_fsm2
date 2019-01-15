@@ -22,7 +22,7 @@ constexpr auto reachableStates()
 {
 	namespace hana = boost::hana;
 
-	auto startStates = hana::tuple_c<StartStates...>;
+	auto startStates = hana::tuple_t<StartStates...>;
 	auto startSet = hana::to_set(startStates);
 
 	auto visitor = hana::fix([](auto self, const auto& visited, auto x) {
@@ -39,13 +39,7 @@ constexpr auto reachableStates()
 		// Make them visited
 		auto includingNewStates = hana::union_(successorStates, visited);
 
-		auto result = hana::fold(newStates, includingNewStates,
-			[&self](const auto& lvisited, const auto& state) {
-				return self(lvisited, state);
-			}
-		);
-
-		return result;
+		return hana::fold(newStates, includingNewStates, self);
 	});
 
 	auto state_set = hana::fold(startSet, startSet, visitor);
