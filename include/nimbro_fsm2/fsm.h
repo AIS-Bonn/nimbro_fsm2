@@ -46,6 +46,8 @@ template<class DriverClass>
 class FSM
 {
 public:
+	static constexpr auto Namespace = detail::namespace_of(detail::type_name<DriverClass>());
+
 	class Transition;
 
 	/**
@@ -174,7 +176,7 @@ public:
 		 *
 		 * @snippet demo.cpp StateName
 		 **/
-		static constexpr auto Name = detail::type_name<Derived>();
+		static constexpr auto Name = detail::relative_name<Derived>(Namespace);
 
 		/**
 		 * @brief Elapsed time

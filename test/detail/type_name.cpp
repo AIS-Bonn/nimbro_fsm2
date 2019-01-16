@@ -28,5 +28,27 @@ TEST_CASE("type_name")
 		Name == BOOST_HANA_STRING("type_name_test::TestA")
 	);
 
+	BOOST_HANA_CONSTANT_CHECK(
+		nimbro_fsm2::detail::namespace_of(Name) == BOOST_HANA_STRING("type_name_test")
+	);
+	REQUIRE(std::string(nimbro_fsm2::detail::namespace_of(Name).c_str()) == "type_name_test");
 	REQUIRE(std::string(Name.c_str()) == "type_name_test::TestA");
+
+	constexpr auto Str1 = BOOST_HANA_STRING("type_name_test::TestA");
+	constexpr auto Str2 = BOOST_HANA_STRING("type_name_test");
+
+	static_assert(nimbro_fsm2::detail::is_prefix(Str2, Str1));
+	REQUIRE(nimbro_fsm2::detail::is_prefix(Str2, Str1));
+	REQUIRE(!nimbro_fsm2::detail::is_prefix(BOOST_HANA_STRING("ABCDE"), BOOST_HANA_STRING("ABCXYZGA")));
+
+	BOOST_HANA_CONSTANT_CHECK(
+		nimbro_fsm2::detail::relative_name_string(Str1, Str2)
+		==
+		BOOST_HANA_STRING("TestA")
+	);
+	REQUIRE(
+		std::string(nimbro_fsm2::detail::relative_name_string(Str1, Str2).c_str())
+		==
+		"TestA"
+	);
 }
