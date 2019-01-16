@@ -1,0 +1,220 @@
+
+/**
+@page howto How to write a Finite State Machine
+
+@tableofcontents
+
+This document is intended as a short guide for writing an FSM using
+@p nimbro_fsm2. It will cover creation of a ROS package depending on
+@p nimbro_fsm2, defining your FSM & driver types, and creating states.
+
+@section howto-ros-package Creating a ROS package with nimbro_fsm2
+
+Create your ROS package as usual (e.g. using
+`catkin_create_pkg NAME nimbro_fsm2` or from scratch). Make sure it depends
+on @p nimbro_fsm2 in your `package.xml` and `CMakeLists.txt`.
+
+We recommend the following directory layout:
+
+    my_package
+    ├── CMakeLists.txt
+    ├── package.xml
+    ├── src
+    │   ├── control.cpp # Your 'driver' object
+    │   ├── control.h
+    │   ├── fsm.h # Definition of FSM types
+    │   └── states
+    │       ├── drive # Use subdirectories to group states
+    │       │   ├── around_panel.cpp # A single state definition
+    │       │   ├── around_panel.h
+    │       │   ├── search.cpp
+    │       │   ├── search.h
+    │       ├── valve
+    │       │   ├── detect_valve.cpp
+    │       │   ├── detect_valve.h
+    │       ├── wait_start.cpp
+    │       ├── wait_start.h
+
+Note that we do not follow the usual ROS convention of having a separate
+`include` folder --- that would be more confusing when you have a lot of states.
+
+@section howto-types Defining your FSM & driver types
+
+For passing information between states, @p nimbro_fsm2 offers two possibilities,
+each with their own advantages and drawbacks:
+
+ * **Constructor arguments:** States can pass arbitrary information to successor
+   states via the successor state constructor. This technique is very flexible
+   and does not violate encapsulation.
+   However, *dynamic* transitions, such as requested through the @p nimbro_fsm2
+   GUI, cannot provide these arguments. Thus, states requiring constructor
+   arguments are excluded from dynamic transitions.
+ * **Driver object:** You can also store arbitrary information in a global
+   *driver* object. This is especially suitable for remembering discovered
+   information, like object poses. On the other hand, storing information
+   like this introduces *state*, which is not represented by the FSM model.
+
+The entire FSM is templated on your driver class. It is highly useful to
+introduce typedefs for your code. Usually, this is done in a central `fsm.h`
+file (see above):
+
+@code{.cpp}
+#ifndef MY_FSM_H
+#define MY_FSM_H
+
+#include <nimbro_fsm2/fsm.h>
+
+class Control;
+using FSM = nimbro_fsm2::FSM<Control>;
+using Transition = FSM::Transition;
+
+#endif
+@endcode
+
+@note The typedef above does not require full definition of your driver class
+  (in this case named `Control`). A forward declaration like above suffices.
+  Use this feature to keep compilation times low!
+
+@section howto-state Creating a state
+
+States are usually defined in their own header and implementation files
+(see above for file layout). Each state is represented by a custom class,
+derived from @ref FSM::State. A state declaration might look like this:
+
+@code{.cpp}
+#ifndef MY_FSM_DRIVE_AROUND_PANEL_H
+#define MY_FSM_DRIVE_AROUND_PANEL_H
+
+#include "../../fsm.h"
+
+// Forward declaration of other states for transition
+namespace valve { class DetectValve; }
+
+namespace drive
+{
+// Forward declaration of another state for transition
+class Search;
+
+class AroundPanel : public FSM::State<AroundPanel,
+	FSM::Transitions<valve::DetectValve, Search>>
+{
+public:
+	Transition execute(Control& driver) override;
+};
+
+}
+
+#endif
+@endcode
+
+As you can see, @ref FSM::State has two template parameters. The first one
+needs to be set to your state class. This helps the compile-time introspection
+to properly detect your class name, among other benefits. The second parameter
+specifies the *allowed* transitions from this state.
+
+@note Again, for transition specifications, the states only need to be
+  forward-declared. Otherwise, we would have problems with cyclic transitions.
+
+Finally, we override the @ref FSM::State::execute method to tell the FSM what
+to do once we are in that state.
+
+An implementation for this state might look like this:
+
+@code{.cpp}
+#include "around_panel.h"
+#include "search.h"
+#include "../valve/detect_valve.h"
+
+namespace drive
+{
+
+Transition AroundPanel::execute(Control& driver)
+{
+	// Are we there?
+	if(...arrived...)
+		return transit<valve::DetectValve>();
+
+	// No idea where to go?
+	if(...lost...)
+		return transit<Search>();
+
+	issue drive commands...
+	return stay();
+}
+
+}
+@endcode
+
+The two primitives @ref FSM::State::transit and @ref FSM::State::stay allow us
+to control the FSM execution.
+
+
+@section howto-control Running the FSM
+
+The only piece missing is the `Control` class. We start with a very basic
+definition in `control.h`:
+
+@code{.cpp}
+#ifndef CONTROL_H
+#define CONTROL_H
+
+#include "fsm.h"
+
+class Control
+{
+public:
+	Control();
+
+	void work();
+private:
+	FSM m_fsm;
+};
+
+#endif
+@endcode
+
+and the corresponding implementation:
+
+@code{.cpp}
+#include "control.h"
+
+#include <ros/init.h>
+
+#include "drive/around_panel.h"
+#include "drive/search.h"
+#include "valve/detect_valve.h"
+
+Control::Control()
+ : m_fsm(*this) // give the FSM a reference to the driver object
+{}
+
+void Control::work()
+{
+	// Initialize the ROS interface. Here, we have to give a list of the
+	// possible entry states as template parameters.
+	m_fsm.initialize<drive::AroundPanel>();
+
+	// Set the start state
+	m_fsm.setState<drive::AroundPanel>();
+
+	// .. and go!
+	ros::Rate rate(ros::Duration(1.0));
+	while(ros::ok())
+	{
+		m_fsm.step();
+		rate.sleep();
+	}
+}
+
+int main(int argc, char** argv)
+{
+	ros::init(argc, argv, "my_fsm");
+
+	Control control;
+	control.work();
+
+	return 0;
+}
+@endcode
+
+*/
