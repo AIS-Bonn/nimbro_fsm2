@@ -85,6 +85,11 @@ public:
 	class Transitions
 	{
 	public:
+		/**
+		 * @brief Set of possible successor states
+		 *
+		 * This is a boost::hana set of all the possible successor states.
+		 **/
 		static constexpr auto SuccessorStateSet = boost::hana::to_set(boost::hana::tuple_t<SuccessorStates...>);
 	};
 
