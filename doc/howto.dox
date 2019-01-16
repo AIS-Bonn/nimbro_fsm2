@@ -1,4 +1,5 @@
 
+namespace nimbro_fsm2 {
 /**
 @page howto How to write a Finite State Machine
 
@@ -111,12 +112,11 @@ As you can see, @ref FSM::State has two template parameters. The first one
 needs to be set to your state class. This helps the compile-time introspection
 to properly detect your class name, among other benefits. The second parameter
 specifies the *allowed* transitions from this state.
+Finally, we override the @ref FSM::State::execute method to tell the FSM what
+to do once we are in that state.
 
 @note Again, for transition specifications, the states only need to be
   forward-declared. Otherwise, we would have problems with cyclic transitions.
-
-Finally, we override the @ref FSM::State::execute method to tell the FSM what
-to do once we are in that state.
 
 An implementation for this state might look like this:
 
@@ -146,8 +146,14 @@ Transition AroundPanel::execute(Control& driver)
 @endcode
 
 The two primitives @ref FSM::State::transit and @ref FSM::State::stay allow us
-to control the FSM execution.
+to control the FSM execution. More advanced states may also override the
+@ref FSM::State::enter and @ref FSM::State::leave methods to perform one-shot
+work at state entry or exit.
 
+@warning Generally, your state should not perform any work in the constructor.
+  The constructor may, depending on the implementation of other states, be
+  called long before your state is entered. Use @ref FSM::State::enter for
+  performing work on state entry.
 
 @section howto-control Running the FSM
 
@@ -218,3 +224,4 @@ int main(int argc, char** argv)
 @endcode
 
 */
+}
