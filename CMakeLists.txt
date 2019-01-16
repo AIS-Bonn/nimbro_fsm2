@@ -42,4 +42,14 @@ if(CATKIN_ENABLE_TESTING)
 	add_dependencies(unit_tests
 		${PROJECT_NAME}_generate_messages_cpp
 	)
+
+	# Integration tests
+	find_package(rostest REQUIRED)
+	catch_add_rostest_node(test_simple_fsm
+		test/simple_fsm.cpp
+	)
+	target_link_libraries(test_simple_fsm
+		${catkin_LIBRARIES}
+	)
+	add_rostest(test/simple_fsm.test DEPENDENCIES test_simple_fsm)
 endif()

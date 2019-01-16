@@ -1,0 +1,4 @@
+<launch>
+	<test test-name="simple_fsm" pkg="nimbro_fsm2" type="test_simple_fsm">
+	</test>
+</launch>
