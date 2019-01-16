@@ -453,6 +453,16 @@ public:
 		fmt::print("}}\n");
 	}
 
+	/**
+	 * @brief Step the FSM
+	 *
+	 * This will call the @ref State::execute() method on the currently active
+	 * state and handle the returned Transition object appropriately, either
+	 * staying in the same or transitioning to another state.
+	 *
+	 * This method will also publish a ROS message on the `status` topic with
+	 * the current FSM state and the state history.
+	 **/
 	void step()
 	{
 		if(!m_state)
@@ -493,6 +503,12 @@ public:
 		}
 	}
 
+	/**
+	 * @brief Retrieve class name of currently active state
+	 *
+	 * If the FSM is not running (i.e. no state has been set with
+	 * @ref setState), this will return `std::string{}`.
+	 **/
 	[[nodiscard]] constexpr std::string currentStateName() const
 	{
 		if(m_stateLabel)
@@ -501,6 +517,15 @@ public:
 			return {};
 	}
 
+	/**
+	 * @brief Information on states & transitions
+	 *
+	 * This returns a ROS message instance with the list of states and possible
+	 * transitions.
+	 *
+	 * @note You will need to call @ref initialize() first, otherwise the result
+	 *   will be empty.
+	 **/
 	[[nodiscard]] constexpr const Info& stateInfo() const
 	{
 		return m_infoMsg;
