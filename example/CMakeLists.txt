@@ -8,3 +8,6 @@ add_executable(demo
 target_link_libraries(demo
 	${catkin_LIBRARIES}
 )
+add_dependencies(demo
+	${PROJECT_NAME}_generate_messages_cpp
+)

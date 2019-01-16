@@ -39,4 +39,7 @@ if(CATKIN_ENABLE_TESTING)
 	target_link_libraries(unit_tests
 		${catkin_LIBRARIES}
 	)
+	add_dependencies(unit_tests
+		${PROJECT_NAME}_generate_messages_cpp
+	)
 endif()
