@@ -382,7 +382,7 @@ public:
 		});
 
 		// Send out & latch Info message
-		Info info;
+		m_infoMsg.states.clear();
 
 		hana::for_each(stateList, [&](auto state){
 			using State = typename decltype(state)::type;
@@ -396,10 +396,10 @@ public:
 				stateInfo.successors.emplace_back(Suc::Name.c_str());
 			});
 
-			info.states.push_back(std::move(stateInfo));
+			m_infoMsg.states.push_back(std::move(stateInfo));
 		});
 
-		m_pub_info.publish(info);
+		m_pub_info.publish(m_infoMsg);
 	}
 
 	/**
@@ -493,6 +493,19 @@ public:
 		}
 	}
 
+	[[nodiscard]] constexpr std::string currentStateName() const
+	{
+		if(m_stateLabel)
+			return m_stateLabel;
+		else
+			return {};
+	}
+
+	[[nodiscard]] constexpr const Info& stateInfo() const
+	{
+		return m_infoMsg;
+	}
+
 private:
 	void switchState(std::unique_ptr<StateBase>&& state, const char* label)
 	{
@@ -516,14 +529,14 @@ private:
 
 	DriverClass& m_driver;
 	std::unique_ptr<StateBase> m_state;
-	const char* m_stateLabel;
+	const char* m_stateLabel = nullptr;
 
 	ros::NodeHandle m_nh;
 	ros::Publisher m_pub_info;
 	ros::Publisher m_pub_status;
 
+	Info m_infoMsg;
 	boost::circular_buffer<StateStatus> m_history{100};
-	Status m_statusMsg;
 };
 
 }
