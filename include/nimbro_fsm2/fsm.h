@@ -413,9 +413,6 @@ public:
 	template<class State, class ... Args>
 	void setState(Args && ... args)
 	{
-// 		auto state = static_cast<std::unique_ptr<StateBase>>(
-//
-// 		);
 		switchState(
 			std::make_unique<State>(std::forward<Args>(args)...),
 			State::Name.c_str()
