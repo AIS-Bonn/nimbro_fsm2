@@ -29,6 +29,16 @@ set(CMAKE_CXX_STANDARD 17)
 
 include_directories(${catkin_INCLUDE_DIRS} include)
 
+add_library(nimbro_fsm2
+	src/detail/format.cpp
+)
+target_link_libraries(nimbro_fsm2
+	${catkin_LIBRARIES}
+)
+add_dependencies(nimbro_fsm2
+	${PROJECT_NAME}_generate_messages_cpp
+)
+
 add_subdirectory(example)
 
 if(CATKIN_ENABLE_TESTING)
@@ -38,6 +48,7 @@ if(CATKIN_ENABLE_TESTING)
 	)
 	target_link_libraries(unit_tests
 		${catkin_LIBRARIES}
+		nimbro_fsm2
 	)
 	add_dependencies(unit_tests
 		${PROJECT_NAME}_generate_messages_cpp
@@ -50,6 +61,7 @@ if(CATKIN_ENABLE_TESTING)
 	)
 	target_link_libraries(test_simple_fsm
 		${catkin_LIBRARIES}
+		nimbro_fsm2
 	)
 	add_rostest(test/simple_fsm.test DEPENDENCIES test_simple_fsm)
 endif()

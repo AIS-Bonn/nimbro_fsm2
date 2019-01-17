@@ -30,6 +30,7 @@
 
 #include "detail/type_name.h"
 #include "detail/is_defined.h"
+#include "detail/format.h"
 #include "introspection.h"
 
 namespace nimbro_fsm2
@@ -211,9 +212,10 @@ public:
 		 * @snippet driving.cpp display
 		 **/
 		template<class ... Args>
-		void display(const std::string& formatString, Args&& ... args)
+		void display(const std::string& formatString, const Args& ... args)
 		{
-			m_displayStream << fmt::format(formatString, std::forward<Args>(args)...) << "\n";
+			fmt::format_arg_store<fmt::format_context, Args...> as{args...};
+			detail::vformat_to_nl(m_displayBuffer, formatString, as);
 		}
 		//@}
 
@@ -328,13 +330,13 @@ public:
 
 		std::string collectDisplayMessages() override
 		{
-			std::string ret = m_displayStream.str();
-			m_displayStream.str({});
+			std::string ret = fmt::to_string(m_displayBuffer);
+			m_displayBuffer = fmt::memory_buffer{};
 			return ret;
 		}
 
 		ros::Time m_enterTime;
-		std::stringstream m_displayStream;
+		fmt::memory_buffer m_displayBuffer;
 	};
 
 
