@@ -7,10 +7,6 @@
 #include "driving.h"
 #include "crashed.h"
 
-#include <thread>
-#include <chrono>
-#include <iostream>
-
 #include <ros/init.h>
 #include <ros/node_handle.h>
 
@@ -37,18 +33,19 @@ int main(int argc, char** argv)
 	//[initialize]
 
 	//[StateName]
-	std::cout << "Starting in state: " << my_fsm::Idle::Name.c_str() << "\n";
+	ROS_INFO("Starting in state: %s", my_fsm::Idle::Name.c_str());
 	//[StateName]
 
 	//[setState]
 	fsm.setState<my_fsm::Idle>();
 	//[setState]
 
-	while(1)
+	ros::Rate rate(1.0);
+	while(ros::ok())
 	{
-		using namespace std::chrono_literals;
-
 		fsm.step();
-		std::this_thread::sleep_for(1s);
+		rate.sleep();
 	}
+
+	return 0;
 }
