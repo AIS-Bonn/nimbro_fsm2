@@ -112,7 +112,7 @@ As you can see, @ref FSM::State has two template parameters. The first one
 needs to be set to your state class. This helps the compile-time introspection
 to properly detect your class name, among other benefits. The second parameter
 specifies the *allowed* transitions from this state.
-Finally, we override the @ref FSM::State::execute method to tell the FSM what
+Finally, we override the @ref FSM::State::execute() method to tell the FSM what
 to do once we are in that state.
 
 @note Again, for transition specifications, the states only need to be
@@ -145,15 +145,34 @@ Transition AroundPanel::execute(Control& driver)
 }
 @endcode
 
-The two primitives @ref FSM::State::transit and @ref FSM::State::stay allow us
-to control the FSM execution. More advanced states may also override the
-@ref FSM::State::enter and @ref FSM::State::leave methods to perform one-shot
-work at state entry or exit.
+The two primitives @ref FSM::State::transit() and @ref FSM::State::stay() allow
+us to control the FSM execution. More advanced states may also override the
+@ref FSM::State::enter() and @ref FSM::State::leave() methods to perform
+one-shot work at state entry or exit.
 
 @warning Generally, your state should not perform any work in the constructor.
   The constructor may, depending on the implementation of other states, be
-  called long before your state is entered. Use @ref FSM::State::enter for
+  called long before your state is entered. Use @ref FSM::State::enter() for
   performing work on state entry.
+
+@note Avoid any blocking behavior in @ref FSM::State::execute(),
+  @ref FSM::State::enter(), and @ref FSM::State::leave(). In particular, this
+  means calls to `tf::TransformListener::waitForTransform()` are not allowed.
+  Instead, use the following idiom:
+  @code{.cpp}
+  tf::StampedTransform transform;
+  try
+  {
+      driver.tf().lookupTransform("my_frame", "other_frame", timestamp, transform);
+  }
+  catch(tf::TransformException& e)
+  {
+      ROSFMT_WARN("Could not obtain transform: {}", e.what());
+      return stay(); // try again next cycle
+  }
+
+  ... use transform ...
+  @endcode
 
 @section howto-control Running the FSM
 
@@ -222,6 +241,21 @@ int main(int argc, char** argv)
 	return 0;
 }
 @endcode
+
+@note You can place "global transitions" in your main FSM loop like this:
+  @code{.cpp}
+  while(ros::ok())
+  {
+  	m_fsm.step();
+  	rate.sleep();
+
+  	if(... transition condition ...)
+  	   m_fsm.setState<OtherState>();
+  }
+  @endcode
+  However, these transitions will not show up in the transition graph in the
+  GUI (which is beneficial --- these would create arrows from all states to
+  the target state).
 
 */
 }
