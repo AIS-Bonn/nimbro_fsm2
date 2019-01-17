@@ -36,9 +36,6 @@ int main(int argc, char** argv)
 	fsm.initialize<my_fsm::Idle>();
 	//[initialize]
 
-	std::cout << "Here is a dot graph of my states:\n";
-	fsm.dumpDot<my_fsm::Idle>();
-
 	//[StateName]
 	std::cout << "Starting in state: " << my_fsm::Idle::Name.c_str() << "\n";
 	//[StateName]

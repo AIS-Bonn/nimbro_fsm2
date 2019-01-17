@@ -5,16 +5,11 @@
 #define NIMBRO_FSM2_FSM_H
 
 #include <memory>
-#include <iostream>
 #include <variant>
 
 #include <boost/hana/tuple.hpp>
 #include <boost/hana/set.hpp>
-#include <boost/hana/range.hpp>
-#include <boost/hana/map.hpp>
 #include <boost/hana/for_each.hpp>
-#include <boost/hana/zip.hpp>
-#include <boost/hana/at_key.hpp>
 
 #include <boost/circular_buffer.hpp>
 
@@ -424,40 +419,6 @@ public:
 			std::make_unique<State>(std::forward<Args>(args)...),
 			State::Name.c_str()
 		);
-	}
-
-	template<class StartState>
-	void dumpDot()
-	{
-		namespace hana = boost::hana;
-		using namespace hana::literals;
-
-		constexpr auto stateList = hana::to_tuple(reachableStates<StartState>());
-		constexpr auto statesWithIds = hana::zip_with(hana::make_pair,
-			stateList,
-			hana::to_tuple(hana::make_range(hana::int_c<0>, hana::length(stateList)))
-		);
-		constexpr auto stateIDMap = hana::to_map(statesWithIds);
-
-		fmt::print("digraph {{\n");
-		hana::for_each(statesWithIds, [](const auto& pair){
-			auto state = hana::first(pair);
-			using State = typename decltype(state)::type;
-			int idx = hana::value(hana::second(pair));
-			fmt::print("  v{} [ label=\"{}\" ];\n", idx, State::Name.c_str());
-		});
-		hana::for_each(statesWithIds, [](const auto& pair){
-			auto state = hana::first(pair);
-			using State = typename decltype(state)::type;
-			int idx = hana::value(hana::second(pair));
-
-			hana::for_each(State::Transitions::SuccessorStateSet, [&](auto suc){
-				int idx2 = hana::value(stateIDMap[suc]);
-				fmt::print("  v{} -> v{};", idx, idx2);
-			});
-			fmt::print("\n");
-		});
-		fmt::print("}}\n");
 	}
 
 	/**
