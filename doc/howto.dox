@@ -20,21 +20,21 @@ We recommend the following directory layout:
     my_package
     ├── CMakeLists.txt
     ├── package.xml
-    ├── src
-    │   ├── control.cpp # Your 'driver' object
-    │   ├── control.h
-    │   ├── fsm.h # Definition of FSM types
-    │   └── states
-    │       ├── drive # Use subdirectories to group states
-    │       │   ├── around_panel.cpp # A single state definition
-    │       │   ├── around_panel.h
-    │       │   ├── search.cpp
-    │       │   ├── search.h
-    │       ├── valve
-    │       │   ├── detect_valve.cpp
-    │       │   ├── detect_valve.h
-    │       ├── wait_start.cpp
-    │       ├── wait_start.h
+    └── src
+        ├── control.cpp # Your 'driver' object
+        ├── control.h
+        ├── fsm.h # Definition of FSM types
+        └── states
+            ├── drive # Use subdirectories to group states
+            │   ├── around_panel.cpp # A single state definition
+            │   ├── around_panel.h
+            │   ├── search.cpp
+            │   └── search.h
+            ├── valve
+            │   ├── detect_valve.cpp
+            │   └── detect_valve.h
+            ├── wait_start.cpp
+            └── wait_start.h
 
 Note that we do not follow the usual ROS convention of having a separate
 `include` folder --- that would be more confusing when you have a lot of states.
