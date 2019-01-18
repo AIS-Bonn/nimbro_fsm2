@@ -18,6 +18,10 @@ add_message_files(FILES
 	Status.msg
 )
 
+add_service_files(FILES
+	ChangeState.srv
+)
+
 generate_messages(DEPENDENCIES
 	std_msgs
 )

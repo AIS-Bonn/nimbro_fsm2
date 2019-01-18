@@ -19,6 +19,7 @@
 
 #include <nimbro_fsm2/Info.h>
 #include <nimbro_fsm2/Status.h>
+#include <nimbro_fsm2/ChangeState.h>
 
 #include <rosfmt/rosfmt.h>
 #include <fmt/format.h>
@@ -348,6 +349,7 @@ public:
 	{
 		m_pub_info = m_nh.advertise<Info>("info", 1, true);
 		m_pub_status = m_nh.advertise<Status>("status", 5);
+		m_srv_changeState = m_nh.advertiseService("change_state", &FSM::handleChangeState, this);
 	}
 
 	/**
@@ -402,6 +404,21 @@ public:
 		});
 
 		m_pub_info.publish(m_infoMsg);
+
+		// Setup factory functions
+		m_factories.clear();
+		boost::hana::for_each(stateList, [this](auto state){
+			using State = typename decltype(state)::type;
+			if constexpr (std::is_constructible_v<State>)
+			{
+				m_factories.emplace(State::Name.c_str(), [](){
+					return StateWithName{
+						std::make_unique<State>(),
+						State::Name.c_str()
+					};
+				});
+			}
+		});
 	}
 
 	/**
@@ -520,6 +537,26 @@ private:
 		m_history.push_back(std::move(stateStatus));
 	}
 
+	// ROS service handler
+	bool handleChangeState(ChangeStateRequest& req, ChangeStateRequest& response)
+	{
+		auto it = m_factories.find(req.state);
+		if(it == m_factories.end())
+		{
+			ROSFMT_ERROR("ROS interface: requested transition to state '{}', "
+				"which is not known to me. Maybe it cannot be found by "
+				"FSM::initialize<>()?",
+				req.state
+			);
+			return false;
+		}
+
+		ROSFMT_INFO("ROS interface: requested state '{}'", req.state);
+		auto stateWithName = it->second();
+		switchState(std::move(stateWithName.first), stateWithName.second);
+		return true;
+	}
+
 	DriverClass& m_driver;
 	std::unique_ptr<StateBase> m_state;
 	const char* m_stateLabel = nullptr;
@@ -527,9 +564,14 @@ private:
 	ros::NodeHandle m_nh;
 	ros::Publisher m_pub_info;
 	ros::Publisher m_pub_status;
+	ros::ServiceServer m_srv_changeState;
 
 	Info m_infoMsg;
 	boost::circular_buffer<StateStatus> m_history{100};
+
+	using StateWithName = std::pair<std::unique_ptr<StateBase>, const char*>;
+	using StateFactory = std::function<StateWithName()>;
+	std::map<std::string, StateFactory> m_factories;
 };
 
 }
