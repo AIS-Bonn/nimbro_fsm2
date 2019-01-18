@@ -9,4 +9,8 @@
 	<depend>roscpp</depend>
 	<depend>catch_ros</depend>
 	<depend>rosfmt</depend>
+	<depend>rqt_gui</depend>
+	<export>
+		<rqt_gui plugin="${prefix}/rqt_plugins.xml" />
+	</export>
 </package>

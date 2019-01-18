@@ -7,6 +7,8 @@ find_package(catkin REQUIRED COMPONENTS
 	rosfmt
 	catch_ros
 	message_generation
+	rqt_gui
+	qt_gui_cpp
 )
 
 add_message_files(FILES
@@ -40,6 +42,7 @@ add_dependencies(nimbro_fsm2
 )
 
 add_subdirectory(example)
+add_subdirectory(gui)
 
 if(CATKIN_ENABLE_TESTING)
 	catch_add_test(unit_tests
