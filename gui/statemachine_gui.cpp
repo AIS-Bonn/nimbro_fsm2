@@ -50,7 +50,9 @@ void StateMachineGUI::initPlugin(qt_gui_cpp::PluginContext& ctx)
 
 	QObject::connect(m_ui->prefixComboBox, SIGNAL(activated(QString)), SLOT(subscribe()));
 	QObject::connect(m_ui->refreshButton, SIGNAL(clicked(bool)), SLOT(refreshTopicList()));
-// 	QObject::connect(m_ui->jumpButton, SIGNAL(clicked(bool)), SLOT(jumpTo()));
+	QObject::connect(m_ui->btn_changeState, SIGNAL(clicked(bool)), SLOT(changeState()));
+
+	QObject::connect(m_ui->nodeGraph, SIGNAL(changeStateActive()), SLOT(changeState()));
 
 // 	QTimer* timer = new QTimer(this);
 // 	QObject::connect(timer, SIGNAL(timeout()), SLOT(refreshTopicList()));
@@ -149,13 +151,16 @@ void StateMachineGUI::handleInfo(const InfoConstPtr& msg)
 }
 
 
-void StateMachineGUI::jumpTo()
+void StateMachineGUI::changeState()
 {
-	QStringList states;
+	m_changeState = !m_changeState;
 
+	if(m_changeState)
+		m_ui->btn_changeState->setStyleSheet("background-color : orange");
+	else
+		m_ui->btn_changeState->setStyleSheet("background-color : grey");
 
-
-	return;
+	m_ui->nodeGraph->setChangeStateActive(m_changeState);
 
 // 	nimbro_fsm::ChangeStateRequest req;
 // 	nimbro_fsm::ChangeStateResponse resp;

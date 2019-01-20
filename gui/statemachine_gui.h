@@ -33,12 +33,14 @@ public:
 	virtual void shutdownPlugin();
 	virtual void saveSettings(qt_gui_cpp::Settings& plugin_settings, qt_gui_cpp::Settings& instance_settings) const;
 	virtual void restoreSettings(const qt_gui_cpp::Settings& plugin_settings, const qt_gui_cpp::Settings& instance_settings);
+
 Q_SIGNALS:
 	void statusReceived(const nimbro_fsm2::StatusConstPtr& msg);
+
 private Q_SLOTS:
 	void refreshTopicList();
 	void subscribe();
-	void jumpTo();
+	void changeState();
 
 	void processStatus(const nimbro_fsm2::StatusConstPtr& msg);
 private:
@@ -55,6 +57,8 @@ private:
 	ros::ServiceClient m_srv_changeState;
 
 	std::string m_prefix;
+
+	bool m_changeState = false;
 
 	bool m_shuttingDown;
 };
