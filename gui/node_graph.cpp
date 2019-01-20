@@ -131,8 +131,9 @@ void NodeGraph::paintEvent(QPaintEvent*)
 
 
 
-	for(auto& e : m_graph.edges)
+	for(auto& em : m_graph.edges)
 	{
+		auto& e = em.second;
 		//Line
 		if(e.line.size() < 2)
 		{
@@ -140,7 +141,7 @@ void NodeGraph::paintEvent(QPaintEvent*)
 			continue;
 		}
 
-		painter.setPen(QPen(e.color));
+		painter.setPen(QPen(QColor(0,0,0)));
 		painter.setBrush(QBrush(Qt::NoBrush));
 
 		painter.drawPolyline(scalePolygon(e.line));
@@ -157,11 +158,17 @@ void NodeGraph::paintEvent(QPaintEvent*)
 		painter.drawPolygon(scalePolygon(e.arrow));
 	}
 
-	for(auto& n : m_graph.nodes)
+	for(auto& nm : m_graph.nodes)
 	{
+		auto& n = nm.second;
 		painter.setBrush(QBrush(n.bColor));
-		painter.drawRect(scaleRect(n.bb));
 		painter.setPen(QPen(n.tColor));
+		if(n.selected)
+		{
+			painter.setBrush(QBrush(QColor(255,150,0)));
+			painter.setPen(QPen(QColor(0,0,0)));
+		}
+		painter.drawRect(scaleRect(n.bb));
 		painter.drawText(scaleRect(n.bb), Qt::AlignCenter, n.label);
 	}
 
@@ -170,34 +177,125 @@ void NodeGraph::paintEvent(QPaintEvent*)
 
 void NodeGraph::updateStatus(const nimbro_fsm2::StatusConstPtr& msg)
 {
-	if(m_graph.init)
-	{
-		int max_hist = std::min((int)msg->history.size(), 2);
-		int last_idx = msg->history.size();
+	if(!m_graph.init)
+		return;
 
-		for(auto& n : m_graph.nodes)
+	//Edges black
+	for(auto& e : m_graph.edges)
+		e.second.color = QColor(0,0,0);
+
+	//Nodes white
+	for(auto& nm : m_graph.nodes)
+		nm.second.bColor = QColor(255,255,255);
+
+	//get history information
+	int max_hist = std::min((int)msg->history.size(), 3);
+	int last_idx = msg->history.size();
+
+	int history_idx[max_hist];
+
+	for(int i=0;i< max_hist; i++)
+	{
+		for(auto& nm: m_graph.nodes)
 		{
-			n.bColor = QColor(255,255,255);
-			for(int i=0; i < max_hist; i++)
+			auto& n = nm.second;
+			if(n.getLabel() == msg->history[last_idx - max_hist + i].name)
 			{
-				int idx = last_idx - max_hist + i;
-				if(n.label.toStdString() == msg->history[idx].name)
-				{
-					n.bColor = QColor((max_hist - i -1) * 200, 255, (max_hist - i-1) * 200);
-				}
+				history_idx[i] = n.id;
 			}
 		}
 	}
 
+	for(int i=0;i<max_hist;i++)
+	{
+		int cv = -250 * std::pow(2,-1.8 * i)+255;
+		QColor color(cv, 255, cv);
+
+		//Color nodes
+		int idx = history_idx[max_hist - i - 1];
+		m_graph.nodes[idx].bColor = color;
+
+
+		if(i==0)
+			continue;
+
+		//Color edges
+		int idx_succ = history_idx[max_hist - i];
+
+		//Check if edge exist (not the case for state jump by the user)
+		if(m_graph.nodes[idx].succ.count(idx_succ) > 0)
+			m_graph.edges[m_graph.nodes[idx].succ[idx_succ]].color = color;
+		else
+			std::cout << "edge " << idx << " -> " << idx_succ << " does not exist" << std::endl;
+
+	}
+
+
+	//Mouse enter event accepten -> mouse move event
+	//->farbe ändern + mousezeiger ändern
+	//click event
+
 	update();
 }
+
+void NodeGraph::mouseMoveEvent(QMouseEvent* event)
+{
+	if(!m_changeStateActive)
+		return;
+
+ 	QPoint pos = event->pos();
+
+	for(auto& nm : m_graph.nodes)
+	{
+		auto& n = nm.second;
+		n.selected = false;
+
+		if(scaleRect(n.bb).contains(pos))
+			n.selected = true;
+	}
+
+	return;
+}
+
+void NodeGraph::mousePressEvent(QMouseEvent *event)
+{
+	return;
+}
+
+void NodeGraph::mouseReleaseEvent(QMouseEvent *event)
+{
+	if(!m_changeStateActive)
+		return;
+
+	for(auto& nm : m_graph.nodes)
+	{
+		auto& n = nm.second;
+		n.selected = false;
+		if(scaleRect(n.bb).contains(event->pos()))
+		{
+			std::cout << "Change to state " << n.label.toStdString() << std::endl;
+			setChangeStateActive(false);
+			if(parent() != 0)
+				emit changeStateActive(); // parent()->changeStateActive();
+
+		}
+	}
+}
+
+void NodeGraph::setChangeStateActive(bool active)
+{
+	m_changeStateActive = active;
+	if(active)
+		setMouseTracking(m_changeStateActive);
+}
+
+
+
 
 void NodeGraph::updateInfo(const nimbro_fsm2::InfoConstPtr& msg)
 {
 	m_stateList = *msg;
-
 	generateGraph();
-
 	update();
 }
 
@@ -208,10 +306,10 @@ void NodeGraph::generateGraph()
 	std::stringstream ss;
 	std::map<std::string, int> map_node_id;
 	size_t dotOutSize = 1000;
-	ss << "digraph {\n";
+	ss << "digraph {\nratio=1\n";
 
 	//Nodes
-	for(int i=0;i<m_stateList.states.size();i++)
+	for(int i=0;i< (int)m_stateList.states.size();i++)
 	{
 		auto& state = m_stateList.states[i];
 		ss << fmt::format("  v{} [ label=\"{}\" shape=box];\n",i, state.name);
@@ -219,7 +317,7 @@ void NodeGraph::generateGraph()
 		dotOutSize+=1000;
 	}
 	//Edges
-	for(int i=0;i<m_stateList.states.size();i++)
+	for(int i=0;i<(int)m_stateList.states.size();i++)
 	{
 		auto& state = m_stateList.states[i];
 		for(auto succ : state.successors)
@@ -232,14 +330,14 @@ void NodeGraph::generateGraph()
 	}
 	ss << "}\n";
 
-// 	std::cout << "-----------" << std::endl << ss.str() << std::endl << "--------_" << std::endl;
+	std::cout << "-----------" << std::endl << ss.str() << std::endl << "--------" << std::endl;
 
 	//Run dot
 	char dotOut[dotOutSize];
 	runDot(ss.str(), dotOut, dotOutSize);
 
 	//Print Json//TODO
-	std::cout << dotOut <<std::endl;
+// 	std::cout << dotOut <<std::endl;
 // 	std::cout << "----------" << std::endl;
 
 	//Create Json object
@@ -283,6 +381,7 @@ void NodeGraph::generateGraph()
 		QVariantMap node_map = nodes.toMap();
 		Node n;
 		n.name = node_map["name"].toString();
+		n.id = boost::lexical_cast<int>(n.name.toStdString().substr(1));
 		n.label = node_map["label"].toString();
 		n.tColor = QColor(0,0,0);
 		n.bColor = QColor(255,255,255);
@@ -328,7 +427,7 @@ void NodeGraph::generateGraph()
 			break;
 		}
 
-		m_graph.nodes.push_back(n);
+		m_graph.nodes[n.id] = n;
 	}
 
 	//Edges
@@ -336,9 +435,13 @@ void NodeGraph::generateGraph()
 	for(auto& edge : edge_list)
 	{
 		Edge e;
+		e.id = m_graph.edges.size();
 		e.color = QColor(0,0,0);
 
 		QVariantMap edge_map = edge.toMap();
+
+		e.parent = edge_map["tail"].toInt();
+		e.child = edge_map["head"].toInt();
 
 		//Line points
 		QVariantList draw_list = edge_map["_draw_"].toList();
@@ -386,7 +489,8 @@ void NodeGraph::generateGraph()
 
 		m_bSpline.compute(&e.supportPoints, &e.line);
 
-		m_graph.edges.push_back(e);
+		m_graph.nodes[e.parent].succ[e.child] = e.id;
+		m_graph.edges[e.id] = e;
 	}
 
 	m_graph.init = true;
@@ -442,6 +546,10 @@ QString NodeGraph::durationIntToStr(int sec)
 	return t;
 }
 
+std::string Node::getLabel()
+{
+	return label.toStdString();
+}
 
 
 }//NS

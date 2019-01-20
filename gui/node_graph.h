@@ -7,6 +7,7 @@
 #include <QWidget>
 #include <ros/ros.h>
 #include <QTimer>
+#include <QMouseEvent>
 
 #include <nimbro_fsm2/Status.h>
 #include <nimbro_fsm2/Info.h>
@@ -23,6 +24,7 @@ struct Point2D
 
 struct Edge
 {
+	int id;
 	int parent;
 	int child;
 	QColor color;
@@ -36,11 +38,17 @@ struct Edge
 struct Node
 {
 	QString name;
+	int id;
 	QString label;
+	std::string getLabel();
 	QColor bColor;
 	QColor tColor;
 
 	QRect bb;
+
+	bool selected = false;
+
+	std::map<int, int > succ;
 
 };
 
@@ -48,8 +56,8 @@ struct Node
 struct Graph
 {
 	QRect bb;
-	std::vector<Node> nodes;
-	std::vector<Edge> edges;
+	std::map<int ,Node> nodes;
+	std::map<int ,Edge> edges;
 
 	bool init = false;
 
@@ -69,7 +77,15 @@ public:
 	void updateInfo(const nimbro_fsm2::InfoConstPtr& msg);
 
 	virtual void paintEvent(QPaintEvent *) override;
+	void mousePressEvent(QMouseEvent *event) override;
+	void mouseMoveEvent(QMouseEvent *event) override;
+	void mouseReleaseEvent(QMouseEvent *event) override;
+
+	void setChangeStateActive(bool active);
 // 	virtual QSize sizeHint() const override;
+
+Q_SIGNALS:
+	void changeStateActive();
 
 private Q_SLOTS:
 
@@ -87,6 +103,8 @@ private:
 	QRect scaleRect(QRect rect);
 	QPoint scalePoint(Point2D p);
 	QPolygonF scalePolygon(QPolygonF poly);
+
+	bool m_changeStateActive = false;
 };
 
 }//NS
