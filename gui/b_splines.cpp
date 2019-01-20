@@ -19,8 +19,6 @@ BSpline::~BSpline()
 
 void BSpline::compute(QVector<QPointF>* controlPoints, QPolygonF* interpolatedPoints)
 {
-	std::cout << "compute " << std::endl;
-
 	m_controlPoints = controlPoints;
 	m_interpolatedPoints = interpolatedPoints;
 	fillKnotVector();
