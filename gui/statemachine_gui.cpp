@@ -13,6 +13,8 @@
 #include <QMessageBox>
 #include <QTimer>
 
+#include <nimbro_fsm2/ChangeState.h>
+
 #include "ui_statemachine_gui.h"
 
 Q_DECLARE_METATYPE(nimbro_fsm2::StatusConstPtr);
@@ -52,7 +54,7 @@ void StateMachineGUI::initPlugin(qt_gui_cpp::PluginContext& ctx)
 	QObject::connect(m_ui->refreshButton, SIGNAL(clicked(bool)), SLOT(refreshTopicList()));
 	QObject::connect(m_ui->btn_changeState, SIGNAL(clicked(bool)), SLOT(changeState()));
 
-	QObject::connect(m_ui->nodeGraph, SIGNAL(changeStateActive()), SLOT(changeState()));
+	QObject::connect(m_ui->nodeGraph, SIGNAL(changeStateTo(std::string)), SLOT(changeStateTo(std::string)));
 
 // 	QTimer* timer = new QTimer(this);
 // 	QObject::connect(timer, SIGNAL(timeout()), SLOT(refreshTopicList()));
@@ -113,7 +115,6 @@ void StateMachineGUI::subscribe()
 
 	m_sub_status = nh.subscribe(prefix + "/status", 1, &StateMachineGUI::statusReceived, this);
 	m_sub_info = nh.subscribe(prefix + "/info", 1, &StateMachineGUI::handleInfo, this);
-// 	m_srv_changeState = nh.serviceClient<nimbro_fsm::ChangeState>(prefix + "/change_state");
 
 	m_w->setWindowTitle(QString::fromStdString(m_prefix));
 }
@@ -124,14 +125,6 @@ void StateMachineGUI::processStatus(const StatusConstPtr& msg)
 
 	m_ui->timeline->updateTimeline(msg);
 	m_ui->nodeGraph->updateStatus(msg);
-
-// 	m_ui->debugTextEdit->setText(QString::fromStdString(msg->debug_information));
-
-// 	QStringList history;
-// 	BOOST_FOREACH(const std::string& state, msg->state_history)
-// 		history << QString::fromStdString(state);
-
-// 	m_ui->historyLabel->setText(history.join("\n"));
 }
 
 void StateMachineGUI::shutdownPlugin()
@@ -162,15 +155,19 @@ void StateMachineGUI::changeState()
 
 	m_ui->nodeGraph->setChangeStateActive(m_changeState);
 
-// 	nimbro_fsm::ChangeStateRequest req;
-// 	nimbro_fsm::ChangeStateResponse resp;
-//
-// 	req.state = state.toStdString();
-
-// 	if(!m_srv_changeState.call(req, resp))
-// 		QMessageBox::critical(m_w, "Error", "Could not switch state");
 }
 
+void StateMachineGUI::changeStateTo(std::string state)
+{
+	m_changeState = false;
+	m_ui->btn_changeState->setStyleSheet("background-color : grey");
+
+	nimbro_fsm2::ChangeState srv;
+	srv.request.state = state;
+
+	if(!ros::service::call(m_prefix + "/change_state", srv))
+		QMessageBox::critical(0, "Error", "Could not call switch state service");
 }
 
+}//NS
 PLUGINLIB_EXPORT_CLASS(nimbro_fsm2::StateMachineGUI, rqt_gui_cpp::Plugin)

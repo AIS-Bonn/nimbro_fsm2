@@ -1,6 +1,17 @@
 //B-Spline interpolation for graph view
 //Author: Christian Lenz <lenz@ais.uni-bonn.de>
 
+// Code based on https://github.com/vkorchagin/animated-b-spline
+
+// InterpolateBezier - interpolates points with bezier curve.
+// Algorithm is based on article "Adaptive Subdivision of Bezier Curves" by
+// Maxim Shemanarev.
+// http://www.antigrain.com/research/adaptive_bezier/index.html
+
+// CalculateBoorNet - inserts new control points with de Boor algorithm for
+// transformation of B-spline into composite Bezier curve.
+
+
 #ifndef NIMBRO_FSM2_BSPLINES_H
 #define NIMBRO_FSM2_BSPLINES_H
 

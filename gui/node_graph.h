@@ -85,7 +85,7 @@ public:
 // 	virtual QSize sizeHint() const override;
 
 Q_SIGNALS:
-	void changeStateActive();
+	void changeStateTo(std::string state);
 
 private Q_SLOTS:
 

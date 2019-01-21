@@ -41,6 +41,7 @@ private Q_SLOTS:
 	void refreshTopicList();
 	void subscribe();
 	void changeState();
+	void changeStateTo(std::string state);
 
 	void processStatus(const nimbro_fsm2::StatusConstPtr& msg);
 private:

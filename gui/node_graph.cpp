@@ -108,6 +108,8 @@ NodeGraph::NodeGraph(QWidget* parent)
 	m_timer->start();
 
 	connect(m_timer, SIGNAL(timeout()), this, SLOT(update()));
+	setMouseTracking(true);
+
 }
 
 NodeGraph::~NodeGraph()
@@ -208,19 +210,19 @@ void NodeGraph::updateStatus(const nimbro_fsm2::StatusConstPtr& msg)
 
 	for(int i=0;i<max_hist;i++)
 	{
-		int cv = -250 * std::pow(2,-1.8 * i)+255;
+		int cv = -250 * std::pow(2,-1.8 * (max_hist - i - 1))+255;
 		QColor color(cv, 255, cv);
 
 		//Color nodes
-		int idx = history_idx[max_hist - i - 1];
+		int idx = history_idx[i];
 		m_graph.nodes[idx].bColor = color;
 
 
-		if(i==0)
+		if(i==max_hist - 1)
 			continue;
 
 		//Color edges
-		int idx_succ = history_idx[max_hist - i];
+		int idx_succ = history_idx[i + 1];
 
 		//Check if edge exist (not the case for state jump by the user)
 		if(m_graph.nodes[idx].succ.count(idx_succ) > 0)
@@ -243,14 +245,12 @@ void NodeGraph::mouseMoveEvent(QMouseEvent* event)
 	if(!m_changeStateActive)
 		return;
 
- 	QPoint pos = event->pos();
-
 	for(auto& nm : m_graph.nodes)
 	{
 		auto& n = nm.second;
 		n.selected = false;
 
-		if(scaleRect(n.bb).contains(pos))
+		if(scaleRect(n.bb).contains(event->pos()))
 			n.selected = true;
 	}
 
@@ -276,8 +276,7 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event)
 			std::cout << "Change to state " << n.label.toStdString() << std::endl;
 			setChangeStateActive(false);
 			if(parent() != 0)
-				emit changeStateActive(); // parent()->changeStateActive();
-
+				emit changeStateTo(n.label.toStdString());
 		}
 	}
 }
@@ -285,8 +284,6 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event)
 void NodeGraph::setChangeStateActive(bool active)
 {
 	m_changeStateActive = active;
-	if(active)
-		setMouseTracking(m_changeStateActive);
 }
 
 
@@ -306,7 +303,7 @@ void NodeGraph::generateGraph()
 	std::stringstream ss;
 	std::map<std::string, int> map_node_id;
 	size_t dotOutSize = 1000;
-	ss << "digraph {\nratio=1\n";
+	ss << "digraph {\n"; //ratio=1\n
 
 	//Nodes
 	for(int i=0;i< (int)m_stateList.states.size();i++)
