@@ -43,6 +43,7 @@ int main(int argc, char** argv)
 	ros::Rate rate(1.0);
 	while(ros::ok())
 	{
+		ros::spinOnce();
 		fsm.step();
 		rate.sleep();
 	}
