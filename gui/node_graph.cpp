@@ -64,7 +64,7 @@ static void runDot(const std::string& dot, char* dotOut, size_t dotOutSize)
         {
             if(dotOutSize == readBytes)
             {
-                std::cout << "dotOutSize: " << dotOutSize << std::endl;
+                ROS_WARN("dotOutSize: %i",dotOutSize);
                 throw std::runtime_error("dot buffer is to small");
             }
 
@@ -83,7 +83,7 @@ static void runDot(const std::string& dot, char* dotOut, size_t dotOutSize)
 
         if(dotOutSize == readBytes)
         {
-            std::cout << "dotOutSize: " << dotOutSize << std::endl;
+            ROS_WARN("dotOutSize: %i",dotOutSize);
             throw std::runtime_error("dot buffer is to small");
         }
 
@@ -292,8 +292,6 @@ void NodeGraph::updateStatus()
         //Check if edge exist (not the case for state jump by the user)
         if(m_graph.nodes[idx].succ.count(idx_succ) > 0)
             m_graph.edges[m_graph.nodes[idx].succ[idx_succ]].color = color;
-        else
-            std::cout << "edge " << idx << " -> " << idx_succ << " does not exist" << std::endl;
 
     }
     update();
@@ -332,7 +330,6 @@ void NodeGraph::mouseReleaseEvent(QMouseEvent *event)
         n.selected = false;
         if(scaleRect(n.bb).contains(event->pos()))
         {
-            std::cout << "Change to state " << n.full_name.toStdString() << std::endl;
             setChangeStateActive(false);
             if(parent() != 0)
                 emit changeStateTo(n.full_name.toStdString());
@@ -469,15 +466,9 @@ void NodeGraph::generateGraph()
     }
     ss << "}\n";
 
-    std::cout << "-----------" << std::endl << ss.str() << std::endl << "--------" << std::endl;
-
     //Run dot
     char dotOut[dotOutSize];
     runDot(ss.str(), dotOut, dotOutSize);
-
-//Print Json//TODO
-// 	std::cout << dotOut <<std::endl;
-// 	std::cout << "----------" << std::endl;
 
     //Create Json object
     QJsonDocument qd = QJsonDocument::fromJson(QString(dotOut).toUtf8());
@@ -545,7 +536,6 @@ void NodeGraph::interpreteJsonGraph(const QJsonDocument qd)
 		for(auto& node_id : sg.subgraph_content)
 		{
 			auto& node = m_graph.nodes[node_id];
-			node.in_subgraph = true;
 			node.full_name = sg.label + "::" + node.label;
 		}
 	}
@@ -673,94 +663,6 @@ QPolygonF NodeGraph::scalePolygon(QPolygonF poly)
         scaledPoly.push_back(QPointF(poly[i].x() * m_graph.scale, poly[i].y() * m_graph.scale));
     }
     return scaledPoly;
-}
-
-// QString NodeGraph::getNodeNs(Node node)
-// {
-// 	std::cout << "search for id: " << node.id << std::endl;
-// 	for(auto& sg : m_graph.subgraphs)
-// 	{
-// 		std::cout << "sg: " << sg.label.toStdString() << std::endl;
-// 		for(auto& n_id : sg.subgraph_content)
-// 		{
-// 			std::cout << "\tid: " << n_id << std::endl;
-// 			if(node.id == n_id)
-// 			{
-// 				QString name = sg.label + "::" + node.label;
-// 				return name;
-// 			}
-// 		}
-// 	}
-// 	std::cout << "did not find " << node.label.toStdString() << " in subgraphs" << std::endl;
-// 	return QString(node.label);
-// }
-
-QString NodeGraph::durationToString(ros::Duration d)
-{
-    int run_seconds = d.toSec() * 10;
-// 	int tenths = run_seconds % 10;
-    int secs = run_seconds / 10;
-    int mins = secs / 60;
-    mins = mins % 60;
-    secs = secs % 60;
-    return QString::number(secs);
-}
-
-QString NodeGraph::durationIntToStr(int sec)
-{
-    QString t;
-    if(sec < 0)
-        t = "-";
-    sec = std::abs(sec);
-    if(sec / 60 > 0)
-        t += QString::number(sec / 60);
-    else
-        t += "0";
-    t += ":";
-    t += QString::number(sec % 60);
-    if(sec%60 == 0)
-        t+= "0";
-    return t;
-}
-
-std::string Node::getLabel()
-{
-    return label.toStdString();
-}
-
-void NodeGraph::debugGraph()
-{
-	std::cout << "##############################" << std::endl;
-	std::cout << "Nodes w/o subgraph" << std::endl;
-	for(auto& nm : m_graph.nodes)
-	{
-		auto& node = nm.second;
-		if(node.in_subgraph)
-			continue;
-
-		std::cout << "\tnode " << node.id << " '" << node.getLabel() << "' / full: '" << node.full_name.toStdString() << "'" << std::endl;
-		for(auto& [succ_id, edge_id] : node.succ)
-		{
-			auto& edge = m_graph.edges[edge_id];
-			std::cout << "\t\tedge " << edge_id << "/" << edge.id << "\t" << edge.tail << " -> " << edge.head << "/" << succ_id << std::endl;
-		}
-	}
-
-	for(auto& sg: m_graph.subgraphs)
-	{
-		std::cout << "sg: " << sg.id << "  '" << sg.getLabel() << "'" << std::endl;
-		for(auto node_id : sg.subgraph_content)
-		{
-			auto& node = m_graph.nodes[node_id];
-			std::cout << "\tnode " << node.id << " '" << node.getLabel() << "' / full: '" << node.full_name.toStdString() << "'" << std::endl;
-			for(auto& [succ_id, edge_id] : node.succ)
-			{
-				auto& edge = m_graph.edges[edge_id];
-				std::cout << "\t\tedge " << edge_id << "/" << edge.id << "\t" << edge.tail << "/" << node_id << " -> " << edge.head << "/" << succ_id << std::endl;
-			}
-		}
-	}
-	std::cout << "##############################" << std::endl;
 }
 
 

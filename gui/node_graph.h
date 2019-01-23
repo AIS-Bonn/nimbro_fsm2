@@ -34,20 +34,18 @@ struct Node
 	int id; //_gvid
 	QString full_name; //ns + label
 	QString label;
+
 	QColor bColor;
 	QColor tColor;
 
 	QRect bb;
 
 	bool selected = false;
-	bool in_subgraph = false;
 
 	//in case of a node
 	std::map<int, int> succ; //succ node-id -> edge id
 	//in case of a subgraph
 	std::vector<int> subgraph_content; //nodes in this subgraph
-
-	std::string getLabel();
 };
 
 
@@ -60,7 +58,6 @@ struct Graph
 	std::vector<Node> subgraphs;
 
 	bool init = false;
-
 	float scale = 1;
 };
 
@@ -94,31 +91,24 @@ public Q_SLOTS:
 private:
 	QTimer* m_timer;
 	nimbro_fsm2::InfoConstPtr m_stateList;
-	QString durationToString(ros::Duration d);
-	QString durationIntToStr(int sec);
 
 	void generateGraph();
 	void interpreteJsonGraph(const QJsonDocument qd);
+	QRect jsonBB(QVariantMap* node_map, QString key, bool window = false);
 
 	Graph m_graph;
+	b_spline::BSpline m_bSpline;
 	bool m_graph_ratio = false;
 	bool m_graph_transpose = false;
 	bool m_graph_subgraph = false;
 	void updateStatus();
 	nimbro_fsm2::StatusConstPtr m_statusMsg;
 
-	void debugGraph();
-
-// 	QString getNodeNs(Node node);
-	QRect jsonBB(QVariantMap* node_map, QString key, bool window = false);
-
-
-	b_spline::BSpline m_bSpline;
+	bool m_changeStateActive = false;
 
 	QRect scaleRect(QRect rect);
 	QPolygonF scalePolygon(QPolygonF poly);
 
-	bool m_changeStateActive = false;
 };
 
 }//NS
