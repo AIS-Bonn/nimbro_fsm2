@@ -12,7 +12,7 @@ TimeLine::TimeLine(QScrollBar* scrollbar, QWidget* parent)
 , m_scrollbar(scrollbar)
 {
 	m_timer = new QTimer();
-	m_timer->setInterval(10);
+	m_timer->setInterval(100);
 	m_timer->start();
 
 	connect(m_timer, SIGNAL(timeout()), this, SLOT(update()));
@@ -75,6 +75,8 @@ void TimeLine::paintEvent(QPaintEvent*)
 
 	//Task names
 
+	float pixelsize = 1000;
+	QFont normal_font = painter.font();
 	//sort
 	std::map<std::string, std::vector<std::string>> sort_map;
 	std::map<QString, int> task_name_id;
@@ -86,7 +88,15 @@ void TimeLine::paintEvent(QPaintEvent*)
 
 		std::string ns = name.substr(0,pos_ns);
 		sort_map[ns].push_back(name);
+
+		pixelsize = std::min(pixelsize,(float)text_offset / name.size() * 1.7f);
 	}
+
+
+	QFont font;
+	pixelsize = std::min(pixelsize,(float)h_tasks * 0.8f);
+	font.setPixelSize(pixelsize);
+
 
 	painter.setBrush(QBrush(QColor(255,255,255)));
 	int idx = 0;
@@ -98,15 +108,17 @@ void TimeLine::paintEvent(QPaintEvent*)
 			painter.setPen(QPen(QColor(255,255,255)));
 			painter.drawRect(QRect(0, idx * h_tasks, text_offset - 5, h_tasks));
 
-			std::size_t pos_name = state.find("::");
-			std::string name = state.substr(pos_name + 2);
-
+// 			std::size_t pos_name = state.find("::");
+// 			std::string name = state.substr(pos_name + 2);
+			painter.setFont(font);
 			painter.setPen(QPen(QColor(0,0,0)));
-			painter.drawText(QRect(0, idx * h_tasks, text_offset - 5, h_tasks), Qt::AlignVCenter, QString::fromStdString(name));
+			painter.drawText(QRect(0, idx * h_tasks, text_offset - 5, h_tasks), Qt::AlignVCenter, QString::fromStdString(state));
 
 			idx++;
 		}
 	}
+
+	painter.setFont(normal_font);
 
 	//History
 	ros::Time start_time = m_data.history[0].start;
@@ -115,7 +127,7 @@ void TimeLine::paintEvent(QPaintEvent*)
 	{
 		painter.setBrush(QBrush(QColor(250,120,0)));
 		painter.setPen(QPen(QColor(220,100,0)));
-		int x,y,wi,he;
+		float x,y,wi,he;
 		x = pos_now - (ros::Time::now() - state.start).toSec() * time_width;
 		wi = (state.end - state.start).toSec() * time_width;
 		y = task_name_id[QString::fromStdString(state.name)] * h_tasks;
@@ -123,11 +135,11 @@ void TimeLine::paintEvent(QPaintEvent*)
 
 		if(x < text_offset)
 		{
-			wi = std::max(0, wi - text_offset + x);
+			wi = std::max(1.f, wi - text_offset + x);
 			x= text_offset;
 		}
 
-		if(wi > 0 && x > 0)
+		if(x > 0)
 		{
 			painter.setBrush(QBrush(QColor(250,120,0)));
 			painter.setPen(QPen(QColor(220,100,0)));
@@ -192,13 +204,13 @@ QSize TimeLine::sizeHint() const
 void TimeLine::updateTimeline(const nimbro_fsm2::StatusConstPtr& msg)
 {
 	m_data = *msg;
-	update();
+// 	update();
 }
 
 void TimeLine::updateStateList(const nimbro_fsm2::InfoConstPtr& msg)
 {
 	m_stateList = *msg;
-	update();
+// 	update();
 }
 
 
