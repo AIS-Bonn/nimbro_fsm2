@@ -42,6 +42,7 @@ private Q_SLOTS:
 	void subscribe();
 	void changeState();
 	void changeStateTo(std::string state);
+	void timerCB();
 
 	void processStatus(const nimbro_fsm2::StatusConstPtr& msg);
 private:
@@ -60,6 +61,7 @@ private:
 	std::string m_prefix;
 
 	bool m_changeState = false;
+	ros::Time m_lastUpdate = ros::Time(0);
 
 	bool m_shuttingDown;
 };

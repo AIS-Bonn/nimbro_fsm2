@@ -15,100 +15,122 @@
 
 static void runDot(const std::string& dot, char* dotOut, size_t dotOutSize)
 {
-	int inputPipe[2];
-	int outputPipe[2];
+    int inputPipe[2];
+    int outputPipe[2];
 
-	if(pipe(inputPipe) != 0 || pipe(outputPipe) != 0)
-		throw std::runtime_error("Could not create pipe");
+    if(pipe(inputPipe) != 0 || pipe(outputPipe) != 0)
+        throw std::runtime_error("Could not create pipe");
 
-	int pid = fork();
-	if(pid == 0)
-	{
-		// Child
-		close(inputPipe[1]);
-		close(outputPipe[0]);
+    int pid = fork();
+    if(pid == 0)
+    {
+        // Child
+        close(inputPipe[1]);
+        close(outputPipe[0]);
 
-		dup2(inputPipe[0], STDIN_FILENO);
-		dup2(outputPipe[1], STDOUT_FILENO);
+        dup2(inputPipe[0], STDIN_FILENO);
+        dup2(outputPipe[1], STDOUT_FILENO);
 
-		if(execlp("dot", "dot", "-Tjson", "-Gdpi=200","/dev/stdin", (char*)NULL) != 0)
-		{
-			perror("execlp() failed");
-			throw std::runtime_error("Could not execute dot");
-			exit(1);
-		}
+        if(execlp("dot", "dot", "-Tjson", "-Gdpi=200","/dev/stdin", (char*)NULL) != 0)
+        {
+            perror("execlp() failed");
+            throw std::runtime_error("Could not execute dot");
+            exit(1);
+        }
 
-		// Cannot reach this
-		return;
-	}
-	else
-	{
-		// Parent
-		close(inputPipe[0]);
-		close(outputPipe[1]);
+        // Cannot reach this
+        return;
+    }
+    else
+    {
+        // Parent
+        close(inputPipe[0]);
+        close(outputPipe[1]);
 
-		size_t written = 0;
-		size_t len = dot.length();
-		while(written != len)
-		{
-			int ret = write(inputPipe[1], dot.c_str() + written, len - written);
-			if(ret <= 0)
-				perror("Could not write");
+        size_t written = 0;
+        size_t len = dot.length();
+        while(written != len)
+        {
+            int ret = write(inputPipe[1], dot.c_str() + written, len - written);
+            if(ret <= 0)
+                perror("Could not write");
 
-			written += ret;
-		}
-		close(inputPipe[1]);
+            written += ret;
+        }
+        close(inputPipe[1]);
 
-		size_t readBytes = 0;
-		while(1)
-		{
-			if(dotOutSize == readBytes)
-			{
-				std::cout << "dotOutSize: " << dotOutSize << std::endl;
-				throw std::runtime_error("dot buffer is to small");
-			}
+        size_t readBytes = 0;
+        while(1)
+        {
+            if(dotOutSize == readBytes)
+            {
+                std::cout << "dotOutSize: " << dotOutSize << std::endl;
+                throw std::runtime_error("dot buffer is to small");
+            }
 
-			int ret = read(outputPipe[0], dotOut + readBytes, dotOutSize - readBytes);
-			if(ret == 0)
-				break;
-			else if(ret < 0)
-			{
-				perror("Could not read");
-				throw std::runtime_error("Could not read");
-			}
+            int ret = read(outputPipe[0], dotOut + readBytes, dotOutSize - readBytes);
+            if(ret == 0)
+                break;
+            else if(ret < 0)
+            {
+                perror("Could not read");
+                throw std::runtime_error("Could not read");
+            }
 
-			readBytes += ret;
-		}
-		close(outputPipe[0]);
+            readBytes += ret;
+        }
+        close(outputPipe[0]);
 
-		if(dotOutSize == readBytes)
-		{
-			std::cout << "dotOutSize: " << dotOutSize << std::endl;
-			throw std::runtime_error("dot buffer is to small");
-		}
+        if(dotOutSize == readBytes)
+        {
+            std::cout << "dotOutSize: " << dotOutSize << std::endl;
+            throw std::runtime_error("dot buffer is to small");
+        }
 
-		dotOut[readBytes] = 0;
+        dotOut[readBytes] = 0;
 
-		int status;
-		waitpid(pid, &status, 0);
-		if(status != 0)
-			fprintf(stderr, "dot exited with error status %d\n", status);
-	}
+        int status;
+        waitpid(pid, &status, 0);
+        if(status != 0)
+            fprintf(stderr, "dot exited with error status %d\n", status);
+    }
 }
 
+static const std::vector<QColor> static_colors = {
+    QColor(255, 179, 0),
+    QColor(128, 62, 117),
+    QColor(255, 104, 0),
+    QColor(166, 189, 215),
+    QColor(193, 0, 32),
+    QColor(206, 162, 98),
+    QColor(129, 112, 102),
+    QColor(0, 125, 52),
+    QColor(246, 118, 142),
+    QColor(0, 83, 138),
+    QColor(255, 122, 92),
+    QColor(83, 55, 122),
+    QColor(255, 142, 0),
+    QColor(179, 40, 81),
+    QColor(244, 200, 0),
+    QColor(127, 24, 13),
+    QColor(147, 170, 0),
+    QColor(89, 51, 21),
+    QColor(241, 58, 19),
+    QColor(35, 44, 22)
+};
 
 namespace nimbro_fsm2_node_graph
 {
 
 NodeGraph::NodeGraph(QWidget* parent)
-: QWidget(parent)
+    : QWidget(parent)
 {
-	m_timer = new QTimer();
-	m_timer->setInterval(100);
-	m_timer->start();
+    m_timer = new QTimer();
+    m_timer->setInterval(100);
+    m_timer->start();
 
-	connect(m_timer, SIGNAL(timeout()), this, SLOT(update()));
-	setMouseTracking(true);
+    connect(m_timer, SIGNAL(timeout()), this, SLOT(update()));
+    setMouseTracking(true);
 
 }
 
@@ -118,434 +140,627 @@ NodeGraph::~NodeGraph()
 
 void NodeGraph::paintEvent(QPaintEvent*)
 {
-	QPainter painter(this);
-	painter.fillRect(rect(), Qt::white);
-	painter.setRenderHint(QPainter::SmoothPixmapTransform);
-
-	//graph initialized?
-	if(!m_graph.init)
-		return;
-
-	m_graph.scale = std::min((float)width() / m_graph.bb.width(), (float)height() / m_graph.bb.height());
-
-	painter.setBrush(QBrush(QColor(255,255,255)));
-	painter.drawRect(scaleRect(m_graph.bb));
+    QPainter painter(this);
+    painter.fillRect(rect(), Qt::white);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform);
 
 
+    //graph initialized?
+    if(!m_graph.init)
+        return;
 
-	for(auto& em : m_graph.edges)
-	{
-		auto& e = em.second;
-		//Line
-		if(e.line.size() < 2)
-		{
-			ROS_WARN("Edge path has not enough points.");
-			continue;
-		}
+    m_graph.scale = std::min((float)width() / m_graph.bb.width(), (float)height() / m_graph.bb.height());
 
-		painter.setPen(QPen(QColor(0,0,0)));
-		painter.setBrush(QBrush(Qt::NoBrush));
+// 	painter.setBrush(QBrush(QColor(255,5,255)));
+// 	painter.drawRect(scaleRect(m_graph.bb));
 
-		painter.drawPolyline(scalePolygon(e.line));
+    for(auto& em : m_graph.edges)
+    {
+        auto& e = em.second;
+        //Line
+        if(e.line.size() < 2)
+        {
+            ROS_WARN("Edge path has not enough points.");
+            continue;
+        }
+
+        painter.setPen(QPen(QColor(0,0,0)));
+        painter.setBrush(QBrush(Qt::NoBrush));
+
+        painter.drawPolyline(scalePolygon(e.line));
 
 
-		//Arrow
-		if(e.arrow.size() != 3)
-		{
-			ROS_WARN("Edge arrow has != 3 points.");
-			continue;
-		}
+        //Arrow
+        if(e.arrow.size() != 3)
+        {
+            ROS_WARN("Edge arrow has != 3 points.");
+            continue;
+        }
 
-		painter.setBrush(QBrush(e.color));
-		painter.drawPolygon(scalePolygon(e.arrow));
-	}
+        painter.setBrush(QBrush(e.color));
+        painter.drawPolygon(scalePolygon(e.arrow));
+    }
 
-	for(auto& nm : m_graph.nodes)
-	{
-		auto& n = nm.second;
-		painter.setBrush(QBrush(n.bColor));
-		painter.setPen(QPen(n.tColor));
-		if(n.selected)
-		{
-			painter.setBrush(QBrush(QColor(255,150,0)));
-			painter.setPen(QPen(QColor(0,0,0)));
-		}
-		painter.drawRect(scaleRect(n.bb));
-		painter.drawText(scaleRect(n.bb), Qt::AlignCenter, n.label);
-	}
+    for(auto& nm : m_graph.nodes)
+    {
+        auto& n = nm.second;
+		QRect n_rect = scaleRect(n.bb);
+        painter.setBrush(QBrush(n.bColor));
+        painter.setPen(QPen(n.tColor));
+        if(n.selected)
+        {
+            painter.setBrush(QBrush(QColor(255,150,0)));
+            painter.setPen(QPen(QColor(0,0,0)));
+        }
+        painter.drawRect(n_rect);
+
+		QFont font;
+
+		int pixelsize = std::min((float)n_rect.height(),(float)n_rect.width() / n.label.size() * 1.7f);
+		font.setPixelSize(pixelsize);
+		painter.setFont(font);
+
+        painter.drawText(n_rect, Qt::AlignCenter, n.label);
+    }
+
+    for(unsigned int i=0;i< m_graph.subgraphs.size(); i++)
+    {
+		auto& sg = m_graph.subgraphs[i];
+
+		QRect sg_rect = scaleRect(sg.bb);
+        painter.setPen(QPen(QColor(0,0,0)));
+		QColor color = static_colors[i % m_graph.subgraphs.size()];
+		color.setAlpha(40);
+		painter.setBrush(color);
+		painter.drawRect(sg_rect);
+
+		QFont font;
+		int pixelsize = std::min(sg_rect.width() / sg.label.size(), sg_rect.height() / sg.label.size());
+		font.setPixelSize(pixelsize);
+		painter.setFont(font);
+
+		color.setAlpha(100);
+		painter.setPen(color);
+		painter.drawText(sg_rect, Qt::AlignHCenter, sg.label);
+
+    }
 
 }
 
-
-void NodeGraph::updateStatus(const nimbro_fsm2::StatusConstPtr& msg)
+void NodeGraph::resizeEvent(QResizeEvent* event)
 {
-	if(!m_graph.init)
-		return;
-
-	//Edges black
-	for(auto& e : m_graph.edges)
-		e.second.color = QColor(0,0,0);
-
-	//Nodes white
-	for(auto& nm : m_graph.nodes)
-		nm.second.bColor = QColor(255,255,255);
-
-	//get history information
-	int max_hist = std::min((int)msg->history.size(), 3);
-	int last_idx = msg->history.size();
-
-	int history_idx[max_hist];
-
-	for(int i=0;i< max_hist; i++)
-	{
-		for(auto& nm: m_graph.nodes)
-		{
-			auto& n = nm.second;
-			if(n.getLabel() == msg->history[last_idx - max_hist + i].name)
-			{
-				history_idx[i] = n.id;
-			}
-		}
-	}
-
-	for(int i=0;i<max_hist;i++)
-	{
-		int cv = -250 * std::pow(2,-1.8 * (max_hist - i - 1))+255;
-		QColor color(cv, 255, cv);
-
-		//Color nodes
-		int idx = history_idx[i];
-		m_graph.nodes[idx].bColor = color;
+	if(m_graph_ratio)
+		generateGraph();
+}
 
 
-		if(i==max_hist - 1)
-			continue;
+void NodeGraph::receiveStatus(const nimbro_fsm2::StatusConstPtr& msg)
+{
+	m_statusMsg = msg;
+	updateStatus();
+}
 
-		//Color edges
-		int idx_succ = history_idx[i + 1];
+void NodeGraph::updateStatus()
+{
+    if(!m_graph.init || !m_statusMsg)
+        return;
 
-		//Check if edge exist (not the case for state jump by the user)
-		if(m_graph.nodes[idx].succ.count(idx_succ) > 0)
-			m_graph.edges[m_graph.nodes[idx].succ[idx_succ]].color = color;
-		else
-			std::cout << "edge " << idx << " -> " << idx_succ << " does not exist" << std::endl;
+    //Edges black
+    for(auto& e : m_graph.edges)
+        e.second.color = QColor(0,0,0);
 
-	}
+    //Nodes white
+    for(auto& nm : m_graph.nodes)
+        nm.second.bColor = QColor(255,255,255);
+
+    //get history information
+    int max_hist = std::min((int)m_statusMsg->history.size(), 3);
+    int last_idx = m_statusMsg->history.size();
+
+    int history_idx[max_hist];
+
+    for(int i=0; i< max_hist; i++)
+    {
+        for(auto& nm: m_graph.nodes)
+        {
+            auto& n = nm.second;
+            if(n.full_name.toStdString() == m_statusMsg->history[last_idx - max_hist + i].name)
+            {
+                history_idx[i] = n.id;
+            }
+        }
+    }
+
+    for(int i=0; i<max_hist; i++)
+    {
+        int cv = -250 * std::pow(2,-1.8 * (max_hist - i - 1))+255;
+        QColor color(cv, 255, cv);
+
+        //Color nodes
+        int idx = history_idx[i];
+        m_graph.nodes[idx].bColor = color;
 
 
-	//Mouse enter event accepten -> mouse move event
-	//->farbe ändern + mousezeiger ändern
-	//click event
+        if(i==max_hist - 1)
+            continue;
 
-	update();
+        //Color edges
+        int idx_succ = history_idx[i + 1];
+
+
+
+        //Check if edge exist (not the case for state jump by the user)
+        if(m_graph.nodes[idx].succ.count(idx_succ) > 0)
+            m_graph.edges[m_graph.nodes[idx].succ[idx_succ]].color = color;
+        else
+            std::cout << "edge " << idx << " -> " << idx_succ << " does not exist" << std::endl;
+
+    }
+    update();
 }
 
 void NodeGraph::mouseMoveEvent(QMouseEvent* event)
 {
-	if(!m_changeStateActive)
-		return;
+    if(!m_changeStateActive)
+        return;
 
-	for(auto& nm : m_graph.nodes)
-	{
-		auto& n = nm.second;
-		n.selected = false;
+    for(auto& nm : m_graph.nodes)
+    {
+        auto& n = nm.second;
+        n.selected = false;
 
-		if(scaleRect(n.bb).contains(event->pos()))
-			n.selected = true;
-	}
+        if(scaleRect(n.bb).contains(event->pos()))
+            n.selected = true;
+    }
 
-	return;
+    return;
 }
 
 void NodeGraph::mousePressEvent(QMouseEvent *event)
 {
-	return;
+    return;
 }
 
 void NodeGraph::mouseReleaseEvent(QMouseEvent *event)
 {
-	if(!m_changeStateActive)
-		return;
+    if(!m_changeStateActive)
+        return;
 
-	for(auto& nm : m_graph.nodes)
-	{
-		auto& n = nm.second;
-		n.selected = false;
-		if(scaleRect(n.bb).contains(event->pos()))
-		{
-			std::cout << "Change to state " << n.label.toStdString() << std::endl;
-			setChangeStateActive(false);
-			if(parent() != 0)
-				emit changeStateTo(n.label.toStdString());
-		}
-	}
+    for(auto& nm : m_graph.nodes)
+    {
+        auto& n = nm.second;
+        n.selected = false;
+        if(scaleRect(n.bb).contains(event->pos()))
+        {
+            std::cout << "Change to state " << n.full_name.toStdString() << std::endl;
+            setChangeStateActive(false);
+            if(parent() != 0)
+                emit changeStateTo(n.full_name.toStdString());
+        }
+    }
 }
 
 void NodeGraph::setChangeStateActive(bool active)
 {
-	m_changeStateActive = active;
+    m_changeStateActive = active;
 }
 
 
+void NodeGraph::checkboxGraphRatio(bool checked)
+{
+    m_graph_ratio = checked;
+    generateGraph();
+}
+
+void NodeGraph::checkboxGraphTranspose(bool checked)
+{
+    m_graph_transpose = checked;
+    generateGraph();
+}
+
+void NodeGraph::checkboxSubgraph(bool checked)
+{
+    m_graph_subgraph = checked;
+    generateGraph();
+}
 
 
 void NodeGraph::updateInfo(const nimbro_fsm2::InfoConstPtr& msg)
 {
-	m_stateList = *msg;
-	generateGraph();
-	update();
+    m_stateList = msg;
+    generateGraph();
+    update();
 }
 
 
 void NodeGraph::generateGraph()
 {
-	//create stringstream for dot graph
-	std::stringstream ss;
-	std::map<std::string, int> map_node_id;
-	size_t dotOutSize = 1000;
-	ss << "digraph {\n"; //ratio=1\n
+	if(!m_stateList)
+		return;
+    //clear old content
+    m_graph.nodes.clear();
+    m_graph.edges.clear();
+    m_graph.subgraphs.clear();
 
-	//Nodes
-	for(int i=0;i< (int)m_stateList.states.size();i++)
-	{
-		auto& state = m_stateList.states[i];
-		ss << fmt::format("  v{} [ label=\"{}\" shape=box];\n",i, state.name);
-		map_node_id[state.name] = i;
-		dotOutSize+=1000;
-	}
-	//Edges
-	for(int i=0;i<(int)m_stateList.states.size();i++)
-	{
-		auto& state = m_stateList.states[i];
-		for(auto succ : state.successors)
+    //create stringstream for dot graph
+    std::stringstream ss;
+
+    //remember node ids for creating edges
+    std::map<std::string, int> map_node_id;
+
+
+    //sort nodes according t namespace
+    std::map<std::string, std::vector<std::string>> subgraph_list;
+    size_t dotOutSize = 1000;
+    ss << "digraph {\n";
+    if(m_graph_ratio)
+    {
+        std::string ratio = boost::lexical_cast<std::string>(height() / (float)width());
+        ss << "ratio=" << ratio << ";\n";
+    }
+    if(m_graph_transpose)
+        ss << "rankdir=LR;\n";
+
+    for(int i=0; i < (int)m_stateList->states.size(); i++)
+    {
+        auto& state = m_stateList->states[i];
+
+		if(m_graph_subgraph)
 		{
-			ss << fmt::format("  v{} -> v{};",i, map_node_id[succ]);
-			dotOutSize+=1000;
+			std::size_t pos_name = state.name.find("::");
+			std::size_t pos_ns = state.name.find_last_of("::");
+			std::string name = state.name;
+			std::string ns = "";
+
+			if(pos_name != std::string::npos)
+			{
+				name = state.name.substr(pos_name + 2);
+				ns = state.name.substr(0,pos_ns-1);
+			}
+
+			map_node_id[name] = i;
+			subgraph_list[ns].push_back(name);
 		}
-		if(state.successors.size() > 0)
-			ss << "\n";
-	}
-	ss << "}\n";
+		else
+		{
+			map_node_id[state.name] = i;
+			subgraph_list[""].push_back(state.name);
+		}
+    }
 
-	std::cout << "-----------" << std::endl << ss.str() << std::endl << "--------" << std::endl;
+    //Nodes
+    int subgraph_id = 0;
+    for(auto& [ns , nodes] : subgraph_list)
+    {
+        std::string indent= "  ";
+        if(m_graph_subgraph && ns != "")
+        {
+            ss << fmt::format("  subgraph cluster_{} ", subgraph_id++) << "{\n";
+            ss << fmt::format("{}label=\"{}\";\n", indent, ns);
+            indent = "    ";
+        }
 
-	//Run dot
-	char dotOut[dotOutSize];
-	runDot(ss.str(), dotOut, dotOutSize);
+        for(auto& node : nodes)
+        {
+            ss << fmt::format("{}v{}  [ label=\"{}\" shape=box];\n",indent, map_node_id[node], node);
+            dotOutSize+=2000;
+        }
 
-	//Print Json//TODO
+        if(m_graph_subgraph && ns != "")
+            ss << "  }\n";
+    }
+
+
+    //Edges
+    for(int i=0; i<(int)m_stateList->states.size(); i++)
+    {
+        auto& state = m_stateList->states[i];
+        for(auto succ : state.successors)
+        {
+			std::string name = succ;
+			std::size_t pos_name = succ.find("::");
+			if(m_graph_subgraph && pos_name != std::string::npos)
+				name = succ.substr(pos_name + 2);
+            ss << fmt::format("  v{} -> v{};",i, map_node_id[name]);
+            dotOutSize+=1000;
+        }
+        if(state.successors.size() > 0)
+            ss << "\n";
+    }
+    ss << "}\n";
+
+    std::cout << "-----------" << std::endl << ss.str() << std::endl << "--------" << std::endl;
+
+    //Run dot
+    char dotOut[dotOutSize];
+    runDot(ss.str(), dotOut, dotOutSize);
+
+//Print Json//TODO
 // 	std::cout << dotOut <<std::endl;
 // 	std::cout << "----------" << std::endl;
 
-	//Create Json object
-	QJsonDocument dotJson = QJsonDocument::fromJson(QString(dotOut).toUtf8());
-	QJsonObject dotObj;
+    //Create Json object
+    QJsonDocument qd = QJsonDocument::fromJson(QString(dotOut).toUtf8());
+    interpreteJsonGraph(qd);
 
-	if(!dotJson.isNull())
-	{
-		if(dotJson.isObject())
-			dotObj = dotJson.object();
-		else
-			throw std::runtime_error("no Json Object");
-	}
-	else
-		throw std::runtime_error("no Json Document");
+// 	debugGraph();
 
-	QVariantMap dot_map = dotObj.toVariantMap();
-
-	//Find bounding box corners
-	std::string bb = dot_map["bb"].toString().toStdString();
-
-	size_t idx[3];
-	idx[0] = bb.find(",");
-	idx[1] = bb.find(",", idx[0] + 1);
-	idx[2] = bb.find(",", idx[1] + 1);
-
-	float x = boost::lexical_cast<float>(bb.substr(0,idx[0]++));
-	float y = boost::lexical_cast<float>(bb.substr(idx[0], idx[1]++ - idx[0]));
-	float xm = boost::lexical_cast<float>(bb.substr(idx[1], idx[2]++ - idx[1]));
-	float ym = boost::lexical_cast<float>(bb.substr(idx[2]));
-	float w = xm-x;
-	float h = ym-y;
-
-	m_graph.bb = QRect(x,y,w,h);
-
-	//Nodes
-	QVariantList node_list = dot_map["objects"].toList();
-
-	for(auto& nodes: node_list)
-	{
-		QVariantMap node_map = nodes.toMap();
-		Node n;
-		n.name = node_map["name"].toString();
-		n.id = boost::lexical_cast<int>(n.name.toStdString().substr(1));
-		n.label = node_map["label"].toString();
-		n.tColor = QColor(0,0,0);
-		n.bColor = QColor(255,255,255);
-
-		//bb
-		QVariantList draw_list = node_map["_draw_"].toList();
-		for(auto& draw : draw_list)
-		{
-			QVariantMap draw_map = draw.toMap();
-			QString op = draw_map["op"].toString();
-			if(op != "p")
-				continue;
-
-			QVariantList point_list = draw_map["points"].toList();
-			float x_array[4];
-			float y_array[4];
-			int idx = 0;
-
-			if(point_list.size() != 4)
-				throw std::runtime_error("Node bounding box has != 4 coordinates");
-			for(auto& p : point_list)
-			{
-				QVariantList points = p.toList();
-				if(points.size() != 2)
-					throw std::runtime_error("Node bounding box coordinates has != 2 values");
-
-				x_array[idx] = points[0].toFloat();
-				y_array[idx] = points[1].toFloat();
-				idx++;
-			}
-
-			float x = *std::min_element(x_array, x_array+4);
-			float y = *std::min_element(y_array, y_array+4);
-			float xm = *std::max_element(x_array, x_array+4);
-			float ym = *std::max_element(y_array, y_array+4);
-			float w = xm - x;
-			float h = ym - y;
-
-			//Flip y-axis. Origin in bottom left in dot and top left in Qt
-			y = m_graph.bb.height() - ym;
-
-			n.bb = QRect(x,y,w,h);
-			break;
-		}
-
-		m_graph.nodes[n.id] = n;
-	}
-
-	//Edges
-	QVariantList edge_list = dot_map["edges"].toList();
-	for(auto& edge : edge_list)
-	{
-		Edge e;
-		e.id = m_graph.edges.size();
-		e.color = QColor(0,0,0);
-
-		QVariantMap edge_map = edge.toMap();
-
-		e.parent = edge_map["tail"].toInt();
-		e.child = edge_map["head"].toInt();
-
-		//Line points
-		QVariantList draw_list = edge_map["_draw_"].toList();
-		for(auto& draw : draw_list)
-		{
-			QVariantMap draw_map = draw.toMap();
-			QString op = draw_map["op"].toString();
-			if(op != "b")
-				continue;
-
-			QVariantList point_list = draw_map["points"].toList();
-			for(auto& p : point_list)
-			{
-				QVariantList points = p.toList();
-				if(points.size() != 2)
-					throw std::runtime_error("Edge points coordinates has != 2 values");
-				QPointF p2d;
-				p2d.setX(points[0].toFloat());
-				p2d.setY(m_graph.bb.height() - points[1].toFloat());
-				e.supportPoints.push_back(p2d);
-			}
-		}
-
-		//Arrow Points
-		draw_list = edge_map["_hdraw_"].toList();
-		for(auto& draw : draw_list)
-		{
-			QVariantMap draw_map = draw.toMap();
-			QString op = draw_map["op"].toString();
-			if(op != "P")
-				continue;
-
-			QVariantList point_list = draw_map["points"].toList();
-			for(auto& p : point_list)
-			{
-				QVariantList points = p.toList();
-				if(points.size() != 2)
-					throw std::runtime_error("Edge points coordinates has != 2 values");
-				QPointF p2d;
-				p2d.setX(points[0].toFloat());
-				p2d.setY(m_graph.bb.height() - points[1].toFloat());
-				e.arrow.push_back(p2d);
-			}
-		}
-
-		m_bSpline.compute(&e.supportPoints, &e.line);
-
-		m_graph.nodes[e.parent].succ[e.child] = e.id;
-		m_graph.edges[e.id] = e;
-	}
-
-	m_graph.init = true;
+    m_graph.init = true;
+	updateStatus();
 }
 
+void NodeGraph::interpreteJsonGraph(const QJsonDocument qd)
+{
+    QJsonObject dotObj;
+
+    if(!qd.isNull())
+    {
+        if(qd.isObject())
+            dotObj = qd.object();
+        else
+            throw std::runtime_error("no Json Object");
+    }
+    else
+        throw std::runtime_error("no Json Document");
+
+    QVariantMap dot_map = dotObj.toVariantMap();
+
+    //Find bounding box corners
+
+	m_graph.bb = jsonBB(&dot_map,"P", true);
+
+    //Nodes / Subgraphs
+    QVariantList node_list = dot_map["objects"].toList();
+    for(auto& nodes: node_list)
+    {
+        QVariantMap node_map = nodes.toMap();
+        Node n;
+		n.id = node_map["_gvid"].toInt();
+        n.label = node_map["label"].toString();
+		n.full_name = n.label;
+        n.tColor = QColor(0,0,0);
+        n.bColor = QColor(255,255,255);
+		n.bb = jsonBB(&node_map, "p");
+
+		std::string object_name = node_map["name"].toString().toStdString();
+
+        if(object_name.find("cluster_") != std::string::npos)
+        {
+            //Cluster
+			QVariantList nl = node_map["nodes"].toList();
+			for(auto& node : nl)
+				n.subgraph_content.push_back(node.toInt());
+
+            m_graph.subgraphs.push_back(n);
+        }
+        else
+        {
+            //Normal node
+			m_graph.nodes[n.id] = n;
+        }
+    }
+
+    for(auto& sg : m_graph.subgraphs)
+	{
+		for(auto& node_id : sg.subgraph_content)
+		{
+			auto& node = m_graph.nodes[node_id];
+			node.in_subgraph = true;
+			node.full_name = sg.label + "::" + node.label;
+		}
+	}
+
+    //Edges
+    QVariantList edge_list = dot_map["edges"].toList();
+    for(auto& edge : edge_list)
+    {
+        Edge e;
+        e.id = m_graph.edges.size();
+        e.color = QColor(0,0,0);
+
+        QVariantMap edge_map = edge.toMap();
+
+        e.tail = edge_map["tail"].toInt();
+        e.head = edge_map["head"].toInt();
+
+        //Line points
+        QVariantList draw_list = edge_map["_draw_"].toList();
+        for(auto& draw : draw_list)
+        {
+            QVariantMap draw_map = draw.toMap();
+            QString op = draw_map["op"].toString();
+            if(op != "b")
+                continue;
+
+            QVariantList point_list = draw_map["points"].toList();
+            for(auto& p : point_list)
+            {
+                QVariantList points = p.toList();
+                if(points.size() != 2)
+                    throw std::runtime_error("Edge points coordinates has != 2 values");
+                QPointF p2d;
+                p2d.setX(points[0].toFloat());
+                p2d.setY(m_graph.bb.height() - points[1].toFloat());
+                e.supportPoints.push_back(p2d);
+            }
+        }
+
+        //Arrow Points
+        draw_list = edge_map["_hdraw_"].toList();
+        for(auto& draw : draw_list)
+        {
+            QVariantMap draw_map = draw.toMap();
+            QString op = draw_map["op"].toString();
+            if(op != "P")
+                continue;
+
+            QVariantList point_list = draw_map["points"].toList();
+            for(auto& p : point_list)
+            {
+                QVariantList points = p.toList();
+                if(points.size() != 2)
+                    throw std::runtime_error("Edge points coordinates has != 2 values");
+                QPointF p2d;
+                p2d.setX(points[0].toFloat());
+                p2d.setY(m_graph.bb.height() - points[1].toFloat());
+                e.arrow.push_back(p2d);
+            }
+        }
+
+        m_bSpline.compute(&e.supportPoints, &e.line);
+
+        m_graph.nodes[e.tail].succ[e.head] = e.id;
+        m_graph.edges[e.id] = e;
+    }
+}
+
+QRect NodeGraph::jsonBB(QVariantMap* node_map, QString key, bool window)
+{
+	QVariantList draw_list = (*node_map)["_draw_"].toList();
+	for(auto& draw : draw_list)
+	{
+		QVariantMap draw_map = draw.toMap();
+		QString op = draw_map["op"].toString();
+		if(op != key)
+			continue;
+
+		QVariantList point_list = draw_map["points"].toList();
+		float x_array[4];
+		float y_array[4];
+		int idx = 0;
+
+		if(point_list.size() != 4)
+			throw std::runtime_error("Bounding box has != 4 coordinates");
+		for(auto& p : point_list)
+		{
+			QVariantList points = p.toList();
+			if(points.size() != 2)
+				throw std::runtime_error("Bounding box coordinates has != 2 values");
+
+			x_array[idx] = points[0].toFloat();
+			y_array[idx] = points[1].toFloat();
+			idx++;
+		}
+
+		float x = *std::min_element(x_array, x_array+4);
+		float y = *std::min_element(y_array, y_array+4);
+		float xm = *std::max_element(x_array, x_array+4);
+		float ym = *std::max_element(y_array, y_array+4);
+		float w = xm - x;
+		float h = ym - y;
+
+		//Flip y-axis. Origin is bottom left in dot and top left in Qt
+		if(!window)
+			y = m_graph.bb.height() - ym;
+
+		return QRect(x,y,w,h);
+	}
+	ROS_ERROR("could not find bounding box in json data :(");
+	return QRect(0,0,0,0);
+}
 
 QRect NodeGraph::scaleRect(QRect rect)
 {
-	float scale = m_graph.scale;
-	return QRect(rect.x() * scale, rect.y() * scale, rect.width() * scale, rect.height() * scale);
-}
-
-QPoint NodeGraph::scalePoint(Point2D p)
-{
-	return QPoint(p.x * m_graph.scale, p.y * m_graph.scale);
+    float scale = m_graph.scale;
+    return QRect(rect.x() * scale, rect.y() * scale, rect.width() * scale, rect.height() * scale);
 }
 
 QPolygonF NodeGraph::scalePolygon(QPolygonF poly)
 {
-	QPolygonF scaledPoly;
-	for(int i=0; i< poly.size(); i++)
-	{
-		scaledPoly.push_back(QPointF(poly[i].x() * m_graph.scale, poly[i].y() * m_graph.scale));
-	}
-	return scaledPoly;
+    QPolygonF scaledPoly;
+    for(int i=0; i< poly.size(); i++)
+    {
+        scaledPoly.push_back(QPointF(poly[i].x() * m_graph.scale, poly[i].y() * m_graph.scale));
+    }
+    return scaledPoly;
 }
+
+// QString NodeGraph::getNodeNs(Node node)
+// {
+// 	std::cout << "search for id: " << node.id << std::endl;
+// 	for(auto& sg : m_graph.subgraphs)
+// 	{
+// 		std::cout << "sg: " << sg.label.toStdString() << std::endl;
+// 		for(auto& n_id : sg.subgraph_content)
+// 		{
+// 			std::cout << "\tid: " << n_id << std::endl;
+// 			if(node.id == n_id)
+// 			{
+// 				QString name = sg.label + "::" + node.label;
+// 				return name;
+// 			}
+// 		}
+// 	}
+// 	std::cout << "did not find " << node.label.toStdString() << " in subgraphs" << std::endl;
+// 	return QString(node.label);
+// }
 
 QString NodeGraph::durationToString(ros::Duration d)
 {
-	int run_seconds = d.toSec() * 10;
+    int run_seconds = d.toSec() * 10;
 // 	int tenths = run_seconds % 10;
-	int secs = run_seconds / 10;
-	int mins = secs / 60;
-	mins = mins % 60;
-	secs = secs % 60;
-	return QString::number(secs);
+    int secs = run_seconds / 10;
+    int mins = secs / 60;
+    mins = mins % 60;
+    secs = secs % 60;
+    return QString::number(secs);
 }
 
 QString NodeGraph::durationIntToStr(int sec)
 {
-	QString t;
-	if(sec < 0)
-		t = "-";
-	sec = std::abs(sec);
-	if(sec / 60 > 0)
-		t += QString::number(sec / 60);
-	else
-		t += "0";
-	t += ":";
-	t += QString::number(sec % 60);
-	if(sec%60 == 0)
-		t+= "0";
-	return t;
+    QString t;
+    if(sec < 0)
+        t = "-";
+    sec = std::abs(sec);
+    if(sec / 60 > 0)
+        t += QString::number(sec / 60);
+    else
+        t += "0";
+    t += ":";
+    t += QString::number(sec % 60);
+    if(sec%60 == 0)
+        t+= "0";
+    return t;
 }
 
 std::string Node::getLabel()
 {
-	return label.toStdString();
+    return label.toStdString();
+}
+
+void NodeGraph::debugGraph()
+{
+	std::cout << "##############################" << std::endl;
+	std::cout << "Nodes w/o subgraph" << std::endl;
+	for(auto& nm : m_graph.nodes)
+	{
+		auto& node = nm.second;
+		if(node.in_subgraph)
+			continue;
+
+		std::cout << "\tnode " << node.id << " '" << node.getLabel() << "' / full: '" << node.full_name.toStdString() << "'" << std::endl;
+		for(auto& [succ_id, edge_id] : node.succ)
+		{
+			auto& edge = m_graph.edges[edge_id];
+			std::cout << "\t\tedge " << edge_id << "/" << edge.id << "\t" << edge.tail << " -> " << edge.head << "/" << succ_id << std::endl;
+		}
+	}
+
+	for(auto& sg: m_graph.subgraphs)
+	{
+		std::cout << "sg: " << sg.id << "  '" << sg.getLabel() << "'" << std::endl;
+		for(auto node_id : sg.subgraph_content)
+		{
+			auto& node = m_graph.nodes[node_id];
+			std::cout << "\tnode " << node.id << " '" << node.getLabel() << "' / full: '" << node.full_name.toStdString() << "'" << std::endl;
+			for(auto& [succ_id, edge_id] : node.succ)
+			{
+				auto& edge = m_graph.edges[edge_id];
+				std::cout << "\t\tedge " << edge_id << "/" << edge.id << "\t" << edge.tail << "/" << node_id << " -> " << edge.head << "/" << succ_id << std::endl;
+			}
+		}
+	}
+	std::cout << "##############################" << std::endl;
 }
 
 
