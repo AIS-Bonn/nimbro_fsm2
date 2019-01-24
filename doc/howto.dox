@@ -259,5 +259,26 @@ int main(int argc, char** argv)
   GUI (which is beneficial --- these would create arrows from all states to
   the target state).
 
+
+@section ui Debugging and Visualization
+
+In state methods, you can use the @ref State::display() method to display
+additional information to a connected rqt GUI instance. This is best used for
+monitoring variables:
+
+@code{.cpp}
+Transition MyState::execute(Driver& driver)
+{
+	the_number_of_the_day = my_sensor();
+	display("the number of the day is: {}", the_number_of_the_day);
+	return stay();
+}
+@endcode
+
+Additionally, you can visualize state kept in your Driver class by providing
+a `std::string Driver::toString() const` method:
+
+@snippet demo.cpp Driver::toString
+
 */
 }

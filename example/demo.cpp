@@ -18,6 +18,18 @@ void Driver::drive(double vx, double vy)
 	std::cout << "Driving command: " << vx << ", " << vy << "\n";
 }
 
+void Driver::reportCrash()
+{
+	m_numCrashes++;
+}
+
+//[Driver::toString]
+std::string Driver::toString() const
+{
+	return fmt::format("Number of crashes: {}", m_numCrashes);
+}
+//[Driver::toString]
+
 }
 
 int main(int argc, char** argv)

@@ -38,6 +38,14 @@ namespace nimbro_fsm2
  * This class defines the necessary types and also contains the runtime
  * needed for Finite State Machines. It is templated on a @p DriverClass type,
  * which can be used by the FSM states to interact with the outside world.
+ *
+ * The FSM offers a ROS interface for introspection (information about the
+ * current state and state history), as well as control (switching to a new
+ * state).
+ *
+ * The @p DriverClass can offer a `std::string DriverClass::toString() const`
+ * method. In that case, the information given by this method is reported
+ * in the ROS status message for display in the GUI.
  **/
 template<class DriverClass>
 class FSM
@@ -462,18 +470,7 @@ public:
 			messages.pop_back();
 
 		// Publish status msg
-		{
-			Status status;
-			status.current_state = m_stateLabel;
-			status.display_messages = messages;
-			status.paused = false;
-			status.history.reserve(m_history.size());
-			std::copy(m_history.begin(), m_history.end(),
-				std::back_inserter(status.history)
-			);
-
-			m_pub_status.publish(status);
-		}
+		sendROSStatus(messages);
 
 		if(nextState)
 		{
@@ -517,6 +514,8 @@ public:
 	}
 
 private:
+	static constexpr auto HasToString = boost::hana::is_valid([](auto&& x) -> decltype((void)x.toString()) { });
+
 	void switchState(std::unique_ptr<StateBase>&& state, const char* label)
 	{
 		if(m_state)
@@ -555,6 +554,26 @@ private:
 		auto stateWithName = it->second();
 		switchState(std::move(stateWithName.first), stateWithName.second);
 		return true;
+	}
+
+	void sendROSStatus(const std::string& messages)
+	{
+		Status status;
+		status.current_state = m_stateLabel ? m_stateLabel : "<not running>";
+		status.display_messages = messages;
+
+		if constexpr(HasToString(DriverClass()))
+		{
+			status.driver_info = m_driver.toString();
+		}
+
+		status.paused = false;
+		status.history.reserve(m_history.size());
+		std::copy(m_history.begin(), m_history.end(),
+			std::back_inserter(status.history)
+		);
+
+		m_pub_status.publish(status);
 	}
 
 	DriverClass& m_driver;

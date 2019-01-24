@@ -9,8 +9,16 @@
 namespace my_fsm
 {
 
+void Crashed::enter(Driver& driver)
+{
+	std::cout << "crashed!\n";
+	driver.reportCrash();
+}
+
 Transition Crashed::execute(Driver& driver)
 {
+	display("count: {}", m_count);
+
 	if(++m_count == 4)
 	{
 		std::cout << "Got rescued.\n";

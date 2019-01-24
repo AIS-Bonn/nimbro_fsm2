@@ -13,6 +13,11 @@ class Driver
 {
 public:
 	void drive(double vx, double vy);
+	void reportCrash();
+
+	std::string toString() const;
+private:
+	unsigned int m_numCrashes = 0;
 };
 
 using FSM = nimbro_fsm2::FSM<Driver>;
