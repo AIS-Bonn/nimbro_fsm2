@@ -24,6 +24,7 @@
 #include <rosfmt/rosfmt.h>
 #include <fmt/format.h>
 
+#include "detail/has_to_string.h"
 #include "detail/type_name.h"
 #include "detail/is_defined.h"
 #include "detail/format.h"
@@ -514,8 +515,6 @@ public:
 	}
 
 private:
-	static constexpr auto HasToString = boost::hana::is_valid([](auto&& x) -> decltype((void)x.toString()) { });
-
 	void switchState(std::unique_ptr<StateBase>&& state, const char* label)
 	{
 		if(m_state)
@@ -562,7 +561,7 @@ private:
 		status.current_state = m_stateLabel ? m_stateLabel : "<not running>";
 		status.display_messages = messages;
 
-		if constexpr(HasToString(DriverClass()))
+		if constexpr(detail::hasToString<DriverClass>(0))
 		{
 			status.driver_info = m_driver.toString();
 		}
