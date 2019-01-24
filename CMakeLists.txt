@@ -28,6 +28,7 @@ generate_messages(DEPENDENCIES
 
 catkin_package(
 	INCLUDE_DIRS include
+	LIBRARIES nimbro_fsm2
 	CATKIN_DEPENDS rosfmt
 )
 

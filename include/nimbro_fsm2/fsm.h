@@ -561,7 +561,7 @@ private:
 		status.current_state = m_stateLabel ? m_stateLabel : "<not running>";
 		status.display_messages = messages;
 
-		if constexpr(detail::hasToString<DriverClass>(0))
+		if constexpr(HasToString(DriverClass()))
 		{
 			status.driver_info = m_driver.toString();
 		}
