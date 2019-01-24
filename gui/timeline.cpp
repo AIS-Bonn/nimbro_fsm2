@@ -4,6 +4,29 @@
 #include "timeline.h"
 #include <QPainter>
 
+static const std::vector<QColor> static_colors = {
+    QColor(255, 179, 0),
+    QColor(128, 62, 117),
+    QColor(255, 104, 0),
+    QColor(166, 189, 215),
+    QColor(193, 0, 32),
+    QColor(206, 162, 98),
+    QColor(129, 112, 102),
+    QColor(0, 125, 52),
+    QColor(246, 118, 142),
+    QColor(0, 83, 138),
+    QColor(255, 122, 92),
+    QColor(83, 55, 122),
+    QColor(255, 142, 0),
+    QColor(179, 40, 81),
+    QColor(244, 200, 0),
+    QColor(127, 24, 13),
+    QColor(147, 170, 0),
+    QColor(89, 51, 21),
+    QColor(241, 58, 19),
+    QColor(35, 44, 22)
+};
+
 namespace nimbro_fsm2_timeline
 {
 
@@ -48,7 +71,7 @@ void TimeLine::paintEvent(QPaintEvent*)
 
 	float num_of_secs = (ros::Time::now() - m_data.history[0].start).toSec();
 	float num_of_secs_displayed = 180;
-	int text_offset = 180;
+	int text_offset = std::min(250, width() / 4);
 	int w = width() - text_offset;
 	int h_line = std::min(40, height());
 	int h_tasks = std::max(0, (height() - h_line) / num_states);
@@ -74,45 +97,68 @@ void TimeLine::paintEvent(QPaintEvent*)
 
 
 	//Task names
-
 	float pixelsize = 1000;
 	QFont normal_font = painter.font();
 	//sort
-	std::map<std::string, std::vector<std::string>> sort_map;
+	std::map<QString, QVector<QString>> sort_map;
 	std::map<QString, int> task_name_id;
+	std::map<QString, QColor> task_color;
 
 	for(auto& state: m_stateList.states)
 	{
 		std::string name = state.name;
-		std::size_t pos_ns = name.find_last_of("::");
+		std::size_t pos_ns = name.find("::");
 
-		std::string ns = name.substr(0,pos_ns);
-		sort_map[ns].push_back(name);
+		std::string ns = "";
+		if(pos_ns != std::string::npos)
+			ns = name.substr(0,pos_ns);
+		sort_map[QString::fromStdString(ns)].push_back(QString::fromStdString(name));
 
-		pixelsize = std::min(pixelsize,(float)text_offset / name.size() * 1.7f);
+		float name_length = name.size();
+// 		if(m_showSubgraph)
+// 			name_length -= ns.length();
+
+		pixelsize = std::min(pixelsize,(float)text_offset / name_length * 1.7f);
 	}
-
 
 	QFont font;
 	pixelsize = std::min(pixelsize,(float)h_tasks * 0.8f);
 	font.setPixelSize(pixelsize);
 
-
-	painter.setBrush(QBrush(QColor(255,255,255)));
+	//Paint names
 	int idx = 0;
+	int ns_idx = 0;
 	for(auto& [ns, list] : sort_map)
 	{
+		QColor color = QColor(250,120,0);
+		painter.setBrush(QBrush(QColor(255,255,255)));
+		if(m_showSubgraph && ns != "")
+		{
+			color = static_colors[ns_idx % sort_map.size()];
+			color.setAlpha(60);
+			painter.setBrush(color);
+			painter.setBrush(QBrush(color));
+			ns_idx++;
+		}
 		for(auto& state: list)
 		{
-			task_name_id[QString::fromStdString(state)] = idx;
+			task_name_id[state] = idx;
+			color.setAlpha(100);
+			task_color[state] = color;
 			painter.setPen(QPen(QColor(255,255,255)));
 			painter.drawRect(QRect(0, idx * h_tasks, text_offset - 5, h_tasks));
 
-// 			std::size_t pos_name = state.find("::");
-// 			std::string name = state.substr(pos_name + 2);
+			QString label = state;
+// 			if(m_showSubgraph)
+// 			{
+// 				std::size_t pos_name = state.toStdString().find("::");
+// 				if(pos_name != std::string::npos)
+// 					label = QString::fromStdString(state.toStdString().substr(pos_name + 2));
+// 			}
+
 			painter.setFont(font);
 			painter.setPen(QPen(QColor(0,0,0)));
-			painter.drawText(QRect(0, idx * h_tasks, text_offset - 5, h_tasks), Qt::AlignVCenter, QString::fromStdString(state));
+			painter.drawText(QRect(0, idx * h_tasks, text_offset - 5, h_tasks), Qt::AlignVCenter, label);
 
 			idx++;
 		}
@@ -127,11 +173,13 @@ void TimeLine::paintEvent(QPaintEvent*)
 	{
 		painter.setBrush(QBrush(QColor(250,120,0)));
 		painter.setPen(QPen(QColor(220,100,0)));
-		float x,y,wi,he;
+		float x,y,wi,he, end;
 		x = pos_now - (ros::Time::now() - state.start).toSec() * time_width;
 		wi = (state.end - state.start).toSec() * time_width;
 		y = task_name_id[QString::fromStdString(state.name)] * h_tasks;
 		he = h_tasks;
+		end = x + wi;
+
 
 		if(x < text_offset)
 		{
@@ -139,10 +187,14 @@ void TimeLine::paintEvent(QPaintEvent*)
 			x= text_offset;
 		}
 
-		if(x > 0)
+		if(end < text_offset)
+			wi = 0;
+
+		if(wi > 0 && x > 0)
 		{
-			painter.setBrush(QBrush(QColor(250,120,0)));
-			painter.setPen(QPen(QColor(220,100,0)));
+
+			painter.setBrush(QBrush(task_color[QString::fromStdString(state.name)]));
+			painter.setPen(QPen(task_color[QString::fromStdString(state.name)]));
 			QRect rect_line(x,y,wi,he);
 			painter.drawRect(rect_line);
 			painter.setPen(QPen(QColor(0,0,0)));
@@ -191,6 +243,11 @@ void TimeLine::paintEvent(QPaintEvent*)
 
 }
 
+void TimeLine::checkboxSubgraph(bool checked)
+{
+	m_showSubgraph = checked;
+}
+
 QSize TimeLine::sizeHint() const
 {
 	float time = 100;
@@ -220,9 +277,13 @@ QString TimeLine::durationToString(ros::Duration d)
 // 	int tenths = run_seconds % 10;
 	int secs = run_seconds / 10;
 	int mins = secs / 60;
-	mins = mins % 60;
+// 	mins = mins % 60;
 	secs = secs % 60;
-	return QString::number(secs);
+	QString duration;
+	if(mins > 0)
+		duration = QString::number(mins) + ":";
+	duration += QString::number(secs);
+	return duration;
 }
 
 QString TimeLine::durationIntToStr(int sec)

@@ -63,6 +63,7 @@ void StateMachineGUI::initPlugin(qt_gui_cpp::PluginContext& ctx)
 	QObject::connect(m_ui->check_ratio, SIGNAL(clicked(bool)), m_ui->nodeGraph, SLOT(checkboxGraphRatio(bool)));
 	QObject::connect(m_ui->check_transpose, SIGNAL(clicked(bool)), m_ui->nodeGraph, SLOT(checkboxGraphTranspose(bool)));
 	QObject::connect(m_ui->check_subgraph, SIGNAL(clicked(bool)), m_ui->nodeGraph, SLOT(checkboxSubgraph(bool)));
+	QObject::connect(m_ui->check_subgraph, SIGNAL(clicked(bool)), m_ui->timeline->getTimeLineWidget(), SLOT(checkboxSubgraph(bool)));
 
 }
 
@@ -98,6 +99,7 @@ void StateMachineGUI::restoreSettings(const qt_gui_cpp::Settings& plugin_setting
 	bool val_subgraph = instance_settings.value("check_subgraph").toBool();
 	m_ui->check_subgraph->setChecked(val_subgraph);
 	m_ui->nodeGraph->checkboxSubgraph(val_subgraph);
+	m_ui->timeline->getTimeLineWidget()->checkboxSubgraph(val_subgraph);
 
 	m_ui->splitter_h->restoreState(instance_settings.value("splitter_h").toByteArray());
 	m_ui->splitter_v->restoreState(instance_settings.value("splitter_v").toByteArray());
@@ -158,7 +160,12 @@ void StateMachineGUI::processStatus(const StatusConstPtr& msg)
 	QString data = "no data for this state...";
 	if(msg->display_messages != "")
 		data = QString::fromStdString(msg->display_messages);
-	m_ui->label_info->setText(data);
+	m_ui->label_state_info->setText(data);
+
+	data = "no driver information...";
+	if(msg->driver_info != "")
+		data = QString::fromStdString(msg->driver_info);
+	m_ui->label_driver_info->setText(data);
 
 }
 

@@ -29,6 +29,9 @@ public:
 	virtual void paintEvent(QPaintEvent *) override;
 	virtual QSize sizeHint() const override;
 
+public Q_SLOTS:
+	void checkboxSubgraph(bool checked);
+
 private Q_SLOTS:
 	void handleScrollbar(int value);
 
@@ -40,6 +43,7 @@ private:
 	QString durationToString(ros::Duration d);
 	QString durationIntToStr(int sec);
 	int m_scrollbar_value;
+	bool m_showSubgraph = false;
 };
 
 
@@ -52,12 +56,13 @@ public:
 	void updateTimeline(const nimbro_fsm2::StatusConstPtr& msg);
 	void updateStateList(const nimbro_fsm2::InfoConstPtr& msg);
 
+	inline TimeLine* getTimeLineWidget() { return m_timeline; }
+
 private:
 	QWidget* m_window;
 	QVBoxLayout* m_vbox;
 	QScrollBar* m_scrollbar;
 	TimeLine* m_timeline;
-
 };
 
 
