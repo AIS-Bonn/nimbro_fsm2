@@ -64,7 +64,7 @@ static void runDot(const std::string& dot, char* dotOut, size_t dotOutSize)
         {
             if(dotOutSize == readBytes)
             {
-                ROS_WARN("dotOutSize: %i",dotOutSize);
+                ROS_WARN("dotOutSize: %i",(int)dotOutSize);
                 throw std::runtime_error("dot buffer is to small");
             }
 
@@ -83,7 +83,7 @@ static void runDot(const std::string& dot, char* dotOut, size_t dotOutSize)
 
         if(dotOutSize == readBytes)
         {
-            ROS_WARN("dotOutSize: %i",dotOutSize);
+            ROS_WARN("dotOutSize: %i",(int)dotOutSize);
             throw std::runtime_error("dot buffer is to small");
         }
 
@@ -181,6 +181,49 @@ void NodeGraph::paintEvent(QPaintEvent*)
         painter.drawPolygon(scalePolygon(e.arrow));
     }
 
+	for(unsigned int i=0;i< m_graph.subgraphs.size(); i++)
+    {
+		auto& sg = m_graph.subgraphs[i];
+
+		QRect sg_rect = scaleRect(sg.bb);
+        painter.setPen(QPen(QColor(0,0,0)));
+		QColor color = static_colors[i % m_graph.subgraphs.size()];
+		color.setAlpha(40);
+		painter.setBrush(color);
+		painter.drawRect(sg_rect);
+
+		//serch highest node in subgraph
+		int y = sg_rect.y() + sg_rect.height();
+		QRect top_bb;
+		for(int n_id : sg.subgraph_content)
+		{
+			QRect n_bb = scaleRect(m_graph.nodes[n_id].bb);
+			if(n_bb.y() < y)
+			{
+				y = n_bb.y();
+				top_bb = n_bb;
+			}
+		}
+
+		int dist_l = std::abs(sg_rect.x() - top_bb.x());
+		int dist_r = std::abs(sg_rect.x() + sg_rect.width() - top_bb.x() - top_bb.width());
+
+
+		QFont font;
+		int pixelsize = std::min(sg_rect.width() / sg.label.size(), sg_rect.height());
+		font.setPixelSize(pixelsize / 2);
+		painter.setFont(font);
+
+		color.setAlpha(200);
+		painter.setPen(color);
+		QString text = " " + sg.label + " ";
+		if(dist_l >= dist_r)
+			painter.drawText(sg_rect, Qt::AlignLeft, text);
+		else
+			painter.drawText(sg_rect, Qt::AlignRight, text);
+
+    }
+
     for(auto& nm : m_graph.nodes)
     {
         auto& n = nm.second;
@@ -203,27 +246,7 @@ void NodeGraph::paintEvent(QPaintEvent*)
         painter.drawText(n_rect, Qt::AlignCenter, n.label);
     }
 
-    for(unsigned int i=0;i< m_graph.subgraphs.size(); i++)
-    {
-		auto& sg = m_graph.subgraphs[i];
 
-		QRect sg_rect = scaleRect(sg.bb);
-        painter.setPen(QPen(QColor(0,0,0)));
-		QColor color = static_colors[i % m_graph.subgraphs.size()];
-		color.setAlpha(40);
-		painter.setBrush(color);
-		painter.drawRect(sg_rect);
-
-		QFont font;
-		int pixelsize = std::min(sg_rect.width() / sg.label.size(), sg_rect.height() / sg.label.size());
-		font.setPixelSize(pixelsize);
-		painter.setFont(font);
-
-		color.setAlpha(100);
-		painter.setPen(color);
-		painter.drawText(sg_rect, Qt::AlignHCenter, sg.label);
-
-    }
 
 }
 
