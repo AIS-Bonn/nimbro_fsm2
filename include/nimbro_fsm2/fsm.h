@@ -28,6 +28,7 @@
 #include "detail/type_name.h"
 #include "detail/is_defined.h"
 #include "detail/format.h"
+#include "detail/watchdog.h"
 #include "introspection.h"
 
 namespace nimbro_fsm2
@@ -464,7 +465,9 @@ public:
 
 		m_history.back().end = ros::Time::now();
 
-		Transition nextState = m_state->doExecute(m_driver);
+		Transition nextState = m_watchdog.call(m_stateLabel, "execute", [&](){
+			return m_state->doExecute(m_driver);
+		});
 		std::string messages = m_state->collectDisplayMessages();
 
 		if(!messages.empty() && messages.back() == '\n')
@@ -520,14 +523,18 @@ private:
 		if(m_state)
 		{
 			ROSFMT_INFO("Leaving state {}", m_stateLabel);
-			m_state->doLeave(m_driver);
+			m_watchdog.call(m_stateLabel, "leave", [&](){
+				m_state->doLeave(m_driver);
+			});
 		}
 
 		m_state = std::move(state);
 		m_stateLabel = label;
 
 		ROSFMT_INFO("Entering state {}", m_stateLabel);
-		m_state->doEnter(m_driver);
+		m_watchdog.call(m_stateLabel, "enter", [&](){
+			m_state->doEnter(m_driver);
+		});
 
 		StateStatus stateStatus;
 		stateStatus.name = m_stateLabel;
@@ -561,7 +568,7 @@ private:
 		status.current_state = m_stateLabel ? m_stateLabel : "<not running>";
 		status.display_messages = messages;
 
-		if constexpr(HasToString(DriverClass()))
+		if constexpr(detail::hasToString<DriverClass>(0))
 		{
 			status.driver_info = m_driver.toString();
 		}
@@ -590,6 +597,8 @@ private:
 	using StateWithName = std::pair<std::unique_ptr<StateBase>, const char*>;
 	using StateFactory = std::function<StateWithName()>;
 	std::map<std::string, StateFactory> m_factories;
+
+	detail::Watchdog m_watchdog;
 };
 
 }

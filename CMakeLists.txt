@@ -38,6 +38,7 @@ include_directories(${catkin_INCLUDE_DIRS} include)
 
 add_library(nimbro_fsm2
 	src/detail/format.cpp
+	src/detail/watchdog.cpp
 )
 target_link_libraries(nimbro_fsm2
 	${catkin_LIBRARIES}
