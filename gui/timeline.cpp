@@ -54,6 +54,20 @@ void TimeLine::handleScrollbar(int value)
 	update();
 }
 
+void TimeLine::wheelEvent(QWheelEvent* event)
+{
+	event->accept();
+	float wheelDelta = event->angleDelta().y() / 120;
+
+	if(m_mouseWheelPos > 10 && wheelDelta > 0)
+		return;
+
+	if(m_mouseWheelPos < 0.005 && wheelDelta < 0)
+		return;
+
+	m_mouseWheelPos *= std::pow(1.3, wheelDelta);
+}
+
 void TimeLine::paintEvent(QPaintEvent*)
 {
 	QPainter painter(this);
@@ -69,14 +83,16 @@ void TimeLine::paintEvent(QPaintEvent*)
 		return;
 	}
 
+	float right_offset = 20;
 	float num_of_secs = (ros::Time::now() - m_data.history[0].start).toSec();
-	float num_of_secs_displayed = 180;
-	int text_offset = std::min(250, width() / 4);
-	int w = width() - text_offset;
-	int h_line = std::min(40, height());
-	int h_tasks = std::max(0, (height() - h_line) / num_states);
+	float text_offset = std::min(250, width() / 4);
+	float w = width() - text_offset - right_offset;
+	float h_line = std::min(40, height());
+	float h_tasks = std::max(0.f, (height() - h_line) / num_states);
 
-	int time_width = w / num_of_secs_displayed;
+	float num_of_secs_displayed = 180 * m_mouseWheelPos;
+	float time_width = w / num_of_secs_displayed;
+
 
 	if(w<=0)
 		return;
@@ -199,7 +215,7 @@ void TimeLine::paintEvent(QPaintEvent*)
 			painter.drawRect(rect_line);
 			painter.setPen(QPen(QColor(0,0,0)));
 			rect_line.setWidth(std::max(rect_line.width(), 60));
-			QString name = "(" + durationToString(state.end - state.start) + "s)";
+			QString name = "(" + durationIntToStr((state.end - state.start).toSec(), true) + "s)";
 			painter.drawText(rect_line, Qt::AlignVCenter, name);
 		}
 	}
@@ -216,6 +232,7 @@ void TimeLine::paintEvent(QPaintEvent*)
 	{
 		int pos_now = text_offset + (ros::Time::now() - start_time).toSec() * time_width - m_scrollbar_value * time_width / 100;
 
+
 		int y_line = num_states * h_tasks;
 		int time_height_up = y_line;
 		int time_height_down = y_line + h_line / 2;
@@ -224,19 +241,73 @@ void TimeLine::paintEvent(QPaintEvent*)
 		painter.setPen(QPen(QColor(0,0,0)));
 		painter.drawLine(text_offset, y_line, width() - 20, y_line);
 
-		for(int i=0 ; i < num_of_secs_displayed + num_of_secs; i++)
+
+		int loopSize = num_of_secs_displayed + num_of_secs;
+		int sec_mainline = 10, sec_2ndLine = 5, sec_4thLine = 1, line_shift = 0;
+
+
+		if(time_width <= 0.8)
+		{
+			sec_mainline = 120;
+			sec_2ndLine = 60;
+			sec_4thLine = loopSize + 1;
+		}
+		else if(time_width > 0.8 && time_width <= 1.6)
+		{
+			sec_mainline = 60;
+			sec_2ndLine = 30;
+			sec_4thLine = loopSize + 1;
+		}
+		else if(time_width > 1.6 && time_width <= 2.5)
+		{
+			sec_mainline = 30;
+			sec_2ndLine = 15;
+			sec_4thLine = loopSize + 1;
+		}
+		else if(time_width > 2.5 && time_width <= 8)
+		{
+			sec_mainline = 20;
+			sec_2ndLine = 10;
+			sec_4thLine = 5;
+		}
+		else if(time_width > 8 && time_width <= 30)
+		{
+			sec_mainline = 10;
+			sec_2ndLine = 5;
+			sec_4thLine = 1;
+		}
+		else if(time_width > 30 && time_width <= 150)
+		{
+			sec_mainline = 5;
+			sec_2ndLine = 1;
+			sec_4thLine = loopSize +1;
+		}
+		else if(time_width > 150)
+		{
+			sec_mainline = sec_2ndLine = 1;
+			sec_4thLine = loopSize + 1;
+			line_shift = time_width / 2;
+		}
+
+		for(int i=0 ; i < loopSize; i++)
 		{
 			int x = pos_now - i * time_width;
 			if(x < text_offset)
 				continue;
-			if(i%10==0)
+			//Main lines with numbers
+			if(i% sec_mainline == 0)
 			{
 				painter.drawLine(x, time_height_down, x, time_height_up);
 				painter.drawText(QRect(x- 25, time_height_down, 50, h_line/2), Qt::AlignCenter, durationIntToStr(-i));
 			}
-			else if(i%5==0)
-				painter.drawLine(x, time_height_down - h_line / 8, x, time_height_up);
-			else
+			//2nd lines
+			if(i% sec_2ndLine == 0){
+				if(x - line_shift < text_offset)
+					continue;
+				painter.drawLine(x - line_shift, time_height_down - h_line / 8, x - line_shift, time_height_up);
+			}
+			//4th lines
+			if(i % sec_4thLine == 0)
 				painter.drawLine(x, time_height_down - h_line / 3, x, time_height_up);
 		}
 	}
@@ -270,36 +341,21 @@ void TimeLine::updateStateList(const nimbro_fsm2::InfoConstPtr& msg)
 // 	update();
 }
 
-
-QString TimeLine::durationToString(ros::Duration d)
-{
-	int run_seconds = d.toSec() * 10;
-// 	int tenths = run_seconds % 10;
-	int secs = run_seconds / 10;
-	int mins = secs / 60;
-// 	mins = mins % 60;
-	secs = secs % 60;
-	QString duration;
-	if(mins > 0)
-		duration = QString::number(mins) + ":";
-	duration += QString::number(secs);
-	return duration;
-}
-
-QString TimeLine::durationIntToStr(int sec)
+QString TimeLine::durationIntToStr(int sec, bool onlySec)
 {
 	QString t;
 	if(sec < 0)
 		t = "-";
 	sec = std::abs(sec);
+	//mins
 	if(sec / 60 > 0)
-		t += QString::number(sec / 60);
-	else
-		t += "0";
-	t += ":";
-	t += QString::number(sec % 60);
-	if(sec%60 == 0)
+		t += QString::number(sec / 60) + ":";
+	else if(!onlySec)
+		t += "0:";
+
+	if(sec%60 < 10 && (!onlySec || sec / 60 > 0))
 		t+= "0";
+	t += QString::number(sec % 60);
 	return t;
 }
 

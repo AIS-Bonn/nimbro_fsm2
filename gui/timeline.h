@@ -9,6 +9,7 @@
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QScrollBar>
+#include <QWheelEvent>
 
 #include <nimbro_fsm2/Status.h>
 #include <nimbro_fsm2/Info.h>
@@ -26,6 +27,8 @@ public:
 	void updateTimeline(const nimbro_fsm2::StatusConstPtr& msg);
 	void updateStateList(const nimbro_fsm2::InfoConstPtr& msg);
 
+	void wheelEvent(QWheelEvent* event) override;
+
 	virtual void paintEvent(QPaintEvent *) override;
 	virtual QSize sizeHint() const override;
 
@@ -40,10 +43,11 @@ private:
 	QScrollBar* m_scrollbar;
 	nimbro_fsm2::Status m_data;
 	nimbro_fsm2::Info m_stateList;
-	QString durationToString(ros::Duration d);
-	QString durationIntToStr(int sec);
+	QString durationIntToStr(int sec, bool onlySec = false);
 	int m_scrollbar_value;
 	bool m_showSubgraph = false;
+
+	float m_mouseWheelPos = 1;
 };
 
 

@@ -55,6 +55,7 @@ void StateMachineGUI::initPlugin(qt_gui_cpp::PluginContext& ctx)
 	QObject::connect(m_ui->prefixComboBox, SIGNAL(activated(QString)), SLOT(subscribe()));
 	QObject::connect(m_ui->refreshButton, SIGNAL(clicked(bool)), SLOT(refreshTopicList()));
 	QObject::connect(m_ui->btn_changeState, SIGNAL(clicked(bool)), SLOT(changeState()));
+	m_ui->btn_changeState->setStyleSheet("background-color : grey");
 
 	QObject::connect(m_ui->nodeGraph, SIGNAL(changeStateTo(std::string)), SLOT(changeStateTo(std::string)));
 
