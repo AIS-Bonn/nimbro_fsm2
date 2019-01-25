@@ -13,8 +13,6 @@
 #include <QMessageBox>
 #include <QTimer>
 
-#include <nimbro_fsm2/ChangeState.h>
-
 #include "ui_statemachine_gui.h"
 
 Q_DECLARE_METATYPE(nimbro_fsm2::StatusConstPtr);
@@ -204,11 +202,12 @@ void StateMachineGUI::changeStateTo(std::string state)
 	m_changeState = false;
 	m_ui->btn_changeState->setStyleSheet("background-color : grey");
 
-	nimbro_fsm2::ChangeState srv;
-	srv.request.state = state;
-
-	if(!ros::service::call(m_prefix + "/change_state", srv))
-		QMessageBox::critical(0, "Error", "Could not call switch state service");
+#warning FIXME
+// 	nimbro_fsm2::ChangeState srv;
+// 	srv.request.state = state;
+//
+// 	if(!ros::service::call(m_prefix + "/change_state", srv))
+// 		QMessageBox::critical(0, "Error", "Could not call switch state service");
 }
 
 void StateMachineGUI::timerCB()

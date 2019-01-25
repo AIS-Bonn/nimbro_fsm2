@@ -9,6 +9,8 @@ find_package(catkin REQUIRED COMPONENTS
 	message_generation
 	rqt_gui
 	qt_gui_cpp
+	actionlib
+	actionlib_msgs
 )
 
 add_message_files(FILES
@@ -18,12 +20,13 @@ add_message_files(FILES
 	Status.msg
 )
 
-add_service_files(FILES
-	ChangeState.srv
+add_action_files(FILES
+	ChangeState.action
 )
 
 generate_messages(DEPENDENCIES
 	std_msgs
+	actionlib_msgs
 )
 
 catkin_package(
@@ -37,6 +40,7 @@ set(CMAKE_CXX_STANDARD 17)
 include_directories(${catkin_INCLUDE_DIRS} include)
 
 add_library(nimbro_fsm2
+	src/detail/action_interface.cpp
 	src/detail/format.cpp
 	src/detail/watchdog.cpp
 )

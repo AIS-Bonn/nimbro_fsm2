@@ -10,6 +10,7 @@
 	<depend>catch_ros</depend>
 	<depend>rosfmt</depend>
 	<depend>rqt_gui</depend>
+	<depend>actionlib</depend>
 	<export>
 		<rqt_gui plugin="${prefix}/rqt_plugins.xml" />
 	</export>

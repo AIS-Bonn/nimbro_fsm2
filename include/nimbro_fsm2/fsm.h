@@ -19,11 +19,11 @@
 
 #include <nimbro_fsm2/Info.h>
 #include <nimbro_fsm2/Status.h>
-#include <nimbro_fsm2/ChangeState.h>
 
 #include <rosfmt/rosfmt.h>
 #include <fmt/format.h>
 
+#include "detail/action_interface.h"
 #include "detail/has_to_string.h"
 #include "detail/type_name.h"
 #include "detail/is_defined.h"
@@ -354,12 +354,12 @@ public:
 	 *           private scope.
 	 **/
 	explicit FSM(DriverClass& driver, const ros::NodeHandle& nh = {"~"})
-	 : m_driver(driver)
-	 , m_nh(nh)
+	 : m_driver{driver}
+	 , m_nh{nh}
+	 , m_actionInterface{nh}
 	{
 		m_pub_info = m_nh.advertise<Info>("info", 1, true);
 		m_pub_status = m_nh.advertise<Status>("status", 5);
-		m_srv_changeState = m_nh.advertiseService("change_state", &FSM::handleChangeState, this);
 	}
 
 	/**
@@ -463,6 +463,29 @@ public:
 		if(!m_state)
 			return;
 
+		// Handle change state requests
+		if(m_actionInterface.changeRequested())
+		{
+			auto stateName = m_actionInterface.requestedState();
+			auto it = m_factories.find(stateName);
+			if(it != m_factories.end())
+			{
+				ROSFMT_INFO("ROS interface: requested state '{}'", stateName);
+				auto stateWithName = it->second();
+				switchState(std::move(stateWithName.first), stateWithName.second);
+				m_actionInterface.report(detail::ActionInterface::Result::Success);
+			}
+			else
+			{
+				ROSFMT_ERROR("ROS interface: requested transition to state '{}', "
+					"which is not known to me. Maybe it cannot be found by "
+					"FSM::initialize<>()?",
+					stateName
+				);
+				m_actionInterface.report(detail::ActionInterface::Result::NoSuchState);
+			}
+		}
+
 		m_history.back().end = ros::Time::now();
 
 		Transition nextState = m_watchdog.call(m_stateLabel, "execute", [&](){
@@ -542,26 +565,6 @@ private:
 		m_history.push_back(std::move(stateStatus));
 	}
 
-	// ROS service handler
-	bool handleChangeState(ChangeStateRequest& req, ChangeStateRequest& response)
-	{
-		auto it = m_factories.find(req.state);
-		if(it == m_factories.end())
-		{
-			ROSFMT_ERROR("ROS interface: requested transition to state '{}', "
-				"which is not known to me. Maybe it cannot be found by "
-				"FSM::initialize<>()?",
-				req.state
-			);
-			return false;
-		}
-
-		ROSFMT_INFO("ROS interface: requested state '{}'", req.state);
-		auto stateWithName = it->second();
-		switchState(std::move(stateWithName.first), stateWithName.second);
-		return true;
-	}
-
 	void sendROSStatus(const std::string& messages)
 	{
 		Status status;
@@ -589,7 +592,6 @@ private:
 	ros::NodeHandle m_nh;
 	ros::Publisher m_pub_info;
 	ros::Publisher m_pub_status;
-	ros::ServiceServer m_srv_changeState;
 
 	Info m_infoMsg;
 	boost::circular_buffer<StateStatus> m_history{100};
@@ -599,6 +601,8 @@ private:
 	std::map<std::string, StateFactory> m_factories;
 
 	detail::Watchdog m_watchdog;
+
+	detail::ActionInterface m_actionInterface;
 };
 
 }
