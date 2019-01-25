@@ -45,6 +45,7 @@ void StateMachineGUI::initPlugin(qt_gui_cpp::PluginContext& ctx)
 	m_w = new QWidget;
 	m_ui = new Ui_StateMachineGUI;
 	m_ui->setupUi(m_w);
+	ros::NodeHandle nh("~");
 
 	ctx.addWidget(m_w);
 
@@ -55,7 +56,7 @@ void StateMachineGUI::initPlugin(qt_gui_cpp::PluginContext& ctx)
 	QObject::connect(m_ui->prefixComboBox, SIGNAL(activated(QString)), SLOT(subscribe()));
 	QObject::connect(m_ui->refreshButton, SIGNAL(clicked(bool)), SLOT(refreshTopicList()));
 	QObject::connect(m_ui->btn_changeState, SIGNAL(clicked(bool)), SLOT(changeState()));
-	m_ui->btn_changeState->setStyleSheet("background-color : grey");
+	m_ui->btn_changeState->setStyleSheet("background-color : lightgrey");
 
 	QObject::connect(m_ui->nodeGraph, SIGNAL(changeStateTo(std::string)), SLOT(changeStateTo(std::string)));
 
@@ -63,6 +64,8 @@ void StateMachineGUI::initPlugin(qt_gui_cpp::PluginContext& ctx)
 	QObject::connect(m_ui->check_transpose, SIGNAL(clicked(bool)), m_ui->nodeGraph, SLOT(checkboxGraphTranspose(bool)));
 	QObject::connect(m_ui->check_subgraph, SIGNAL(clicked(bool)), m_ui->nodeGraph, SLOT(checkboxSubgraph(bool)));
 	QObject::connect(m_ui->check_subgraph, SIGNAL(clicked(bool)), m_ui->timeline->getTimeLineWidget(), SLOT(checkboxSubgraph(bool)));
+
+	connect(this, SIGNAL(actionClientFinished()), SLOT(checkActionClient()), Qt::QueuedConnection);
 
 }
 
@@ -134,6 +137,7 @@ void StateMachineGUI::refreshTopicList()
 		}
 		++idx;
 	}
+
 }
 
 void StateMachineGUI::subscribe()
@@ -144,6 +148,10 @@ void StateMachineGUI::subscribe()
 
 	m_sub_status = nh.subscribe(prefix + "/status", 1, &StateMachineGUI::statusReceived, this);
 	m_sub_info = nh.subscribe(prefix + "/info", 1, &StateMachineGUI::handleInfo, this);
+
+	m_ac.reset(new actionlib::SimpleActionClient<nimbro_fsm2::ChangeStateAction>(
+		nh, prefix + "/change_state", false)
+	);
 
 	m_w->setWindowTitle(QString::fromStdString(m_prefix));
 }
@@ -192,7 +200,7 @@ void StateMachineGUI::changeState()
 	if(m_changeState)
 		m_ui->btn_changeState->setStyleSheet("background-color : orange");
 	else
-		m_ui->btn_changeState->setStyleSheet("background-color : grey");
+		m_ui->btn_changeState->setStyleSheet("background-color : lightgrey");
 
 	m_ui->nodeGraph->setChangeStateActive(m_changeState);
 
@@ -201,14 +209,21 @@ void StateMachineGUI::changeState()
 void StateMachineGUI::changeStateTo(std::string state)
 {
 	m_changeState = false;
-	m_ui->btn_changeState->setStyleSheet("background-color : grey");
+	m_ui->btn_changeState->setStyleSheet("background-color : lightgrey");
 
-#warning FIXME
-// 	nimbro_fsm2::ChangeState srv;
-// 	srv.request.state = state;
-//
-// 	if(!ros::service::call(m_prefix + "/change_state", srv))
-// 		QMessageBox::critical(0, "Error", "Could not call switch state service");
+	if(!m_actionActive)
+	{
+		m_actionActive = true;
+		nimbro_fsm2::ChangeStateGoal goal;
+		goal.state = state;
+		m_ac->sendGoal(goal,
+			boost::bind(&StateMachineGUI::actionClientFinished, this)
+		);
+	}
+	else
+	{
+		ROS_ERROR("Action Server is not free. Can't send new state change request");
+	}
 }
 
 void StateMachineGUI::timerCB()
@@ -220,6 +235,43 @@ void StateMachineGUI::timerCB()
 		m_ui->label_status_update->setStyleSheet("background-color : yellow");
 	if(updateElapsed > 3.0)
 		m_ui->label_status_update->setStyleSheet("background-color : red");
+
+	if(!m_ac || !m_ac->isServerConnected())
+	{
+		m_ui->btn_changeState->setText("[not connected]");
+		m_ui->btn_changeState->setEnabled(false);
+		m_actionActive = false;
+	}
+	else if(m_actionActive)
+	{
+		m_ui->btn_changeState->setText("...changing state...");
+		m_ui->btn_changeState->setEnabled(false);
+	}
+	else
+	{
+		m_ui->btn_changeState->setText("Change State ->");
+		m_ui->btn_changeState->setEnabled(true);
+	}
+}
+
+void StateMachineGUI::checkActionClient()
+{
+	if(m_actionActive)
+	{
+		auto state = m_ac->getState();
+		if(state.isDone())
+		{
+			m_actionActive = false;
+			if(state != state.SUCCEEDED)
+			{
+				QMessageBox::critical(m_w, "Error",
+					QString("Could not change state: %1").arg(
+						QString::fromStdString(state.getText())
+					)
+				);
+			}
+		}
+	}
 }
 
 

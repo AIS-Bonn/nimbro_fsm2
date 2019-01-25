@@ -16,6 +16,9 @@
 #include <nimbro_fsm2/Status.h>
 #include <nimbro_fsm2/Info.h>
 
+#include <actionlib/client/simple_action_client.h>
+#include <nimbro_fsm2/ChangeStateAction.h>
+
 class Ui_StateMachineGUI;
 
 namespace nimbro_fsm2
@@ -36,6 +39,7 @@ public:
 
 Q_SIGNALS:
 	void statusReceived(const nimbro_fsm2::StatusConstPtr& msg);
+	void actionClientFinished();
 
 private Q_SLOTS:
 	void refreshTopicList();
@@ -43,6 +47,7 @@ private Q_SLOTS:
 	void changeState();
 	void changeStateTo(std::string state);
 	void timerCB();
+	void checkActionClient();
 
 	void processStatus(const nimbro_fsm2::StatusConstPtr& msg);
 private:
@@ -56,7 +61,10 @@ private:
 
 	ros::Subscriber m_sub_status;
 	ros::Subscriber m_sub_info;
-	ros::ServiceClient m_srv_changeState;
+
+	typedef actionlib::SimpleActionClient<nimbro_fsm2::ChangeStateAction> ActionClient;
+	boost::shared_ptr<ActionClient> m_ac;
+	bool m_actionActive = false;
 
 	std::string m_prefix;
 
