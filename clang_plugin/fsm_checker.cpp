@@ -36,21 +36,23 @@ auto getLoc(T& node)
 #endif
 }
 
-auto InterestingConstructorMatcher = cxxConstructorDecl(
+auto stateConstructor = allOf(
 	isDefinition(),
 	unless(isDefaulted()),
-	ofClass(isDerivedFrom("nimbro_fsm2::detail::AbstractState")),
+	ofClass(isDerivedFrom("nimbro_fsm2::detail::AbstractState"))
+);
+
+auto InterestingConstructorMatcher = cxxConstructorDecl(
+	stateConstructor,
 	hasBody(
 		hasDescendant(
 			callExpr().bind("call")
 		)
 	)
-).bind("constructor");
+);
 
 auto ProblematicConstructorMatcher = cxxConstructorDecl(
-	isDefinition(),
-	unless(isDefaulted()),
-	ofClass(isDerivedFrom("nimbro_fsm2::detail::AbstractState")),
+	stateConstructor,
 	hasBody(
 		hasDescendant(
 			callExpr(
@@ -60,7 +62,7 @@ auto ProblematicConstructorMatcher = cxxConstructorDecl(
 			).bind("call")
 		)
 	)
-).bind("constructor");
+);
 
 const char* PLUGIN_NAME = "nimbro_fsm2";
 
