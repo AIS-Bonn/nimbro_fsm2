@@ -9,7 +9,7 @@
 namespace my_fsm
 {
 
-Transition Idle::execute(Driver& driver)
+Transition Idle::execute()
 {
 	std::cout << "Let's go for a ride!\n";
 	return transit<Driving>();

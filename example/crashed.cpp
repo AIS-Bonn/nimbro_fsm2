@@ -9,13 +9,13 @@
 namespace my_fsm
 {
 
-void Crashed::enter(Driver& driver)
+void Crashed::enter()
 {
 	std::cout << "crashed!\n";
-	driver.reportCrash();
+	driver().reportCrash();
 }
 
-Transition Crashed::execute(Driver& driver)
+Transition Crashed::execute()
 {
 	display("count: {}", m_count);
 

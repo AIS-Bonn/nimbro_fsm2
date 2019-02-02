@@ -18,8 +18,8 @@ class Crashed;
 class Driving : public FSM::State<Driving, FSM::Transitions<Idle, Crashed>>
 {
 public:
-	virtual void enter(Driver& driver) override;
-	virtual Transition execute(Driver& driver) override;
+	void enter() override;
+	Transition execute() override;
 private:
 	std::mt19937 m_randomGenerator;
 	int m_count = 0;
