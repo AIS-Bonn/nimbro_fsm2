@@ -34,6 +34,15 @@
 namespace nimbro_fsm2
 {
 
+namespace detail
+{
+	// Used for the Clang plugin for state discovery without going through
+	// template magic.
+	class AbstractState
+	{
+	};
+}
+
 /**
  * @brief Finite State Machine
  *
@@ -63,7 +72,7 @@ public:
 	 * You should not directly use this class. Derive your class from State
 	 * instead.
 	 **/
-	class StateBase
+	class StateBase : private detail::AbstractState
 	{
 	public:
 		virtual ~StateBase() {}

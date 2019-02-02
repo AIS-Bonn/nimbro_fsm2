@@ -1,5 +1,21 @@
 
 cmake_minimum_required(VERSION 3.2)
+
+# We default to clang compiler in order to use our own clang plugin.
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+find_package(Clang)
+
+if(NOT CMAKE_CXX_COMPILER)
+	if(CLANG_FOUND)
+		set(CMAKE_C_COMPILER ${CLANG_EXECUTABLE})
+		set(CMAKE_CXX_COMPILER ${CLANGPP_EXECUTABLE})
+	else()
+		message(WARNING "Install clang to get better diagnostics!")
+	endif()
+else()
+	message(STATUS "CMAKE_CXX_COMPILER already set to ${CMAKE_CXX_COMPILER}")
+endif()
+
 project(nimbro_fsm2)
 
 find_package(catkin REQUIRED COMPONENTS
@@ -51,6 +67,7 @@ add_dependencies(nimbro_fsm2
 	${PROJECT_NAME}_generate_messages_cpp
 )
 
+add_subdirectory(clang_plugin)
 add_subdirectory(example)
 add_subdirectory(gui)
 
@@ -78,3 +95,4 @@ if(CATKIN_ENABLE_TESTING)
 	)
 	add_rostest(test/simple_fsm.test DEPENDENCIES test_simple_fsm)
 endif()
+
