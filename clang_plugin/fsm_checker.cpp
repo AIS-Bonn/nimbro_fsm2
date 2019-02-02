@@ -6,18 +6,35 @@
 
 #include <llvm/Support/CommandLine.h>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcomment"
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+
 #include <clang/Frontend/FrontendPluginRegistry.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/AST/ASTConsumer.h>
 #include <clang/AST/RecursiveASTVisitor.h>
-#include "clang/ASTMatchers/ASTMatchers.h"
-#include "clang/ASTMatchers/ASTMatchFinder.h"
+#include <clang/ASTMatchers/ASTMatchers.h>
+#include <clang/ASTMatchers/ASTMatchFinder.h>
+#include <clang/Basic/Version.h>
+
+#pragma GCC diagnostic pop
 
 namespace
 {
 
 using namespace clang;
 using namespace clang::ast_matchers;
+
+template<class T>
+auto getLoc(T& node)
+{
+#if CLANG_VERSION_MAJOR < 7
+	return node.getLocStart();
+#else
+	return node.getBeginLoc();
+#endif
+}
 
 auto InterestingConstructorMatcher = cxxConstructorDecl(
 	isDefinition(),
@@ -68,7 +85,7 @@ public:
 		if(!call)
 			std::abort();
 
-		auto diag = m_C.getDiagnostics().Report(call->getLocStart(), m_warning);
+		auto diag = m_C.getDiagnostics().Report(getLoc(*call), m_warning);
 	}
 private:
 	CompilerInstance& m_C;
@@ -95,7 +112,7 @@ public:
 		if(!call)
 			std::abort();
 
-		auto diag = m_C.getDiagnostics().Report(call->getLocStart(), m_error);
+		auto diag = m_C.getDiagnostics().Report(getLoc(*call), m_error);
 	}
 private:
 	CompilerInstance& m_C;
