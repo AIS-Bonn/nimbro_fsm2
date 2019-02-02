@@ -518,7 +518,7 @@ public:
 	 * If the FSM is not running (i.e. no state has been set with
 	 * @ref setState), this will return `std::string{}`.
 	 **/
-	[[nodiscard]] constexpr std::string currentStateName() const
+	[[nodiscard]] std::string currentStateName() const
 	{
 		if(m_stateLabel)
 			return m_stateLabel;
@@ -535,7 +535,7 @@ public:
 	 * @note You will need to call @ref initialize() first, otherwise the result
 	 *   will be empty.
 	 **/
-	[[nodiscard]] constexpr const Info& stateInfo() const
+	[[nodiscard]] const Info& stateInfo() const
 	{
 		return m_infoMsg;
 	}
