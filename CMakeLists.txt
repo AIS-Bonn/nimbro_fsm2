@@ -2,11 +2,10 @@
 cmake_minimum_required(VERSION 3.2)
 
 # We default to clang compiler in order to use our own clang plugin.
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-find_package(Clang)
-
 if(NOT CMAKE_CXX_COMPILER)
-	if(CLANG_FOUND)
+	find_program(CLANG_EXECUTABLE clang)
+	find_program(CLANGPP_EXECUTABLE clang++)
+	if(CLANG_EXECUTABLE)
 		set(CMAKE_C_COMPILER ${CLANG_EXECUTABLE})
 		set(CMAKE_CXX_COMPILER ${CLANGPP_EXECUTABLE})
 	else()
@@ -68,6 +67,18 @@ add_dependencies(nimbro_fsm2
 )
 
 add_subdirectory(clang_plugin)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+	message(STATUS "Using clang compiler plugin...")
+	target_compile_options(nimbro_fsm2
+		PUBLIC "-fplugin=$<TARGET_FILE:fsm_checker>"
+	)
+	add_dependencies(nimbro_fsm2 fsm_checker)
+else()
+	message(WARNING "Consider switching to clang to make use of nimbro_fsm2's "
+		"clang plugin for better diagnostics")
+endif()
+
 add_subdirectory(example)
 add_subdirectory(gui)
 
