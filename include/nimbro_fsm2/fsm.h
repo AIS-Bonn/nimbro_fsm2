@@ -343,7 +343,7 @@ public:
 		 * @warning You cannot use this function in the constructor of your
 		 * state! The reference is set up *after* creation of the state object.
 		 **/
-		DriverClass& driver()
+		[[nodiscard]] DriverClass& driver()
 		{
 			auto* ptr = this->_driver();
 			if(!ptr)
