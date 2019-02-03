@@ -17,7 +17,7 @@ struct is_defined
 };
 
 template <class T>
-struct is_defined<T, std::enable_if_t<sizeof(T)>>
+struct is_defined<T, std::enable_if_t<(sizeof(T) > 0)>>
 {
 	static constexpr bool value = true;
 };

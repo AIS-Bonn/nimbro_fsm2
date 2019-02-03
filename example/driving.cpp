@@ -10,7 +10,7 @@
 namespace my_fsm
 {
 
-void Driving::enter(Driver& driver)
+void Driving::enter()
 {
 	std::cout << "Wohoo, starting to drive!\n";
 
@@ -19,7 +19,7 @@ void Driving::enter(Driver& driver)
 }
 
 //[execute]
-Transition Driving::execute(Driver& driver)
+Transition Driving::execute()
 {
 	//[display]
 	std::uniform_real_distribution<float> crashDistribution(0.0, 1.0);
@@ -40,7 +40,7 @@ Transition Driving::execute(Driver& driver)
 	}
 
 	// Driving along
-	driver.drive(0.0, 1.0);
+	driver().drive(0.0, 1.0);
 	return stay();
 }
 //[execute]

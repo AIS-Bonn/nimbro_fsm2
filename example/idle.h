@@ -14,7 +14,7 @@ class Driving;
 class Idle : public FSM::State<Idle, FSM::Transitions<Driving>>
 {
 public:
-	virtual Transition execute(Driver& driver) override;
+	Transition execute() override;
 };
 
 }

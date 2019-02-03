@@ -20,9 +20,9 @@ class StateB;
 class StateA : public FSM::State<StateA, FSM::Transitions<StateB>>
 {
 public:
-	Transition execute(TestDriver& driver) override
+	Transition execute() override
 	{
-		driver.flag = true;
+		driver().flag = true;
 		return transit<StateB>();
 	}
 };
@@ -34,7 +34,7 @@ public:
 	 : m_transit{transit}
 	{}
 
-	Transition execute(TestDriver& driver) override
+	Transition execute() override
 	{
 		if(m_transit)
 			return transit<StateA>();

@@ -31,8 +31,23 @@
 #include "detail/watchdog.h"
 #include "introspection.h"
 
+#if !NIMBRO_FSM2_CHECKED
+#warning You are not compiling with the nimbro_fsm2 compiler plugin.\
+ You probably need to install clang and delete the build directories of\
+ nimbro_fsm2 and your package.
+#endif
+
 namespace nimbro_fsm2
 {
+
+namespace detail
+{
+	// Used for the Clang plugin for state discovery without going through
+	// template magic.
+	class AbstractState
+	{
+	};
+}
 
 /**
  * @brief Finite State Machine
@@ -63,15 +78,24 @@ public:
 	 * You should not directly use this class. Derive your class from State
 	 * instead.
 	 **/
-	class StateBase
+	class StateBase : private detail::AbstractState
 	{
 	public:
 		virtual ~StateBase() {}
 
-		virtual Transition doExecute(DriverClass& driver) = 0;
-		virtual void doEnter(DriverClass& driver) = 0;
-		virtual void doLeave(DriverClass& driver) = 0;
+		void setDriver(DriverClass* driver)
+		{ m_driver = driver; }
+
+		virtual Transition doExecute() = 0;
+		virtual void doEnter() = 0;
+		virtual void doLeave() = 0;
 		virtual std::string collectDisplayMessages() = 0;
+
+	protected:
+		DriverClass* _driver()
+		{ return m_driver; }
+	private:
+		DriverClass* m_driver = nullptr;
 	};
 
 	class Stay
@@ -294,11 +318,11 @@ public:
 		//! @name Hooks
 		//@{
 		//! Called after entering the state
-		virtual void enter(DriverClass&)
+		virtual void enter()
 		{}
 
 		//! Called before leaving the state
-		virtual void leave(DriverClass&)
+		virtual void leave()
 		{}
 
 		/**
@@ -311,27 +335,51 @@ public:
 		 *
 		 * @snippet driving.cpp execute
 		 **/
-		virtual Transition execute(DriverClass& driver) = 0;
+		virtual Transition execute() = 0;
+		//@}
+
+		//!@name I/O
+		//@{
+		/**
+		 * @brief Obtain a reference to the global driver object
+		 *
+		 * You can use this function to access the driver object, which may
+		 * be used to store information (e.g. discovered objects/poses/etc).
+		 *
+		 * @warning You cannot use this function in the constructor of your
+		 * state! The reference is set up *after* creation of the state object.
+		 **/
+		[[nodiscard]] DriverClass& driver()
+		{
+			auto* ptr = this->_driver();
+			if(!ptr)
+			{
+				throw std::logic_error("You called driver() before the state "
+					"was fully constructed!");
+			}
+
+			return *ptr;
+		}
 		//@}
 	private:
-		Transition doExecute(DriverClass& driver) override
+		Transition doExecute() override
 		{
 			Derived& derived = static_cast<Derived&>(*this);
-			return derived.execute(driver);
+			return derived.execute();
 		}
 
-		void doEnter(DriverClass& driver) override
+		void doEnter() override
 		{
 			m_enterTime = ros::Time::now();
 
 			Derived& derived = static_cast<Derived&>(*this);
-			derived.enter(driver);
+			derived.enter();
 		}
 
-		void doLeave(DriverClass& driver) override
+		void doLeave() override
 		{
 			Derived& derived = static_cast<Derived&>(*this);
-			derived.leave(driver);
+			derived.leave();
 		}
 
 		std::string collectDisplayMessages() override
@@ -489,7 +537,7 @@ public:
 		m_history.back().end = ros::Time::now();
 
 		Transition nextState = m_watchdog.call(m_stateLabel, "execute", [&](){
-			return m_state->doExecute(m_driver);
+			return m_state->doExecute();
 		});
 		std::string messages = m_state->collectDisplayMessages();
 
@@ -518,7 +566,7 @@ public:
 	 * If the FSM is not running (i.e. no state has been set with
 	 * @ref setState), this will return `std::string{}`.
 	 **/
-	[[nodiscard]] constexpr std::string currentStateName() const
+	[[nodiscard]] std::string currentStateName() const
 	{
 		if(m_stateLabel)
 			return m_stateLabel;
@@ -535,7 +583,7 @@ public:
 	 * @note You will need to call @ref initialize() first, otherwise the result
 	 *   will be empty.
 	 **/
-	[[nodiscard]] constexpr const Info& stateInfo() const
+	[[nodiscard]] const Info& stateInfo() const
 	{
 		return m_infoMsg;
 	}
@@ -547,16 +595,18 @@ private:
 		{
 			ROSFMT_INFO("Leaving state {}", m_stateLabel);
 			m_watchdog.call(m_stateLabel, "leave", [&](){
-				m_state->doLeave(m_driver);
+				m_state->doLeave();
 			});
 		}
 
 		m_state = std::move(state);
 		m_stateLabel = label;
 
+		m_state->setDriver(&m_driver);
+
 		ROSFMT_INFO("Entering state {}", m_stateLabel);
 		m_watchdog.call(m_stateLabel, "enter", [&](){
-			m_state->doEnter(m_driver);
+			m_state->doEnter();
 		});
 
 		StateStatus stateStatus;
