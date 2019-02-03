@@ -28,7 +28,14 @@ find_package(catkin REQUIRED COMPONENTS
 	actionlib_msgs
 )
 
+# First try to find ClangConfig.cmake
 find_package(Clang QUIET)
+
+# On clang 6.0, this fails (at least on Ubuntu)
+if(NOT CLANG_INCLUDE_DIRS)
+	find_path(CLANG_INCLUDE_DIRS "clang/Basic/Version.h" PATHS "/usr/lib/llvm-6.0/include")
+endif()
+
 if(CLANG_INCLUDE_DIRS)
 	set(HAVE_PLUGIN "YES")
 	add_subdirectory(clang_plugin)
@@ -78,7 +85,7 @@ add_dependencies(nimbro_fsm2
 # If we have the compiler plugin, attach the compiler options for loading to
 # the nimbro_fsm2 target. NOTE: This is only used for internal targets,
 # for the exported version see cmake/nimbro_fsm2.cmake.in.
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND ${HAVE_PLUGIN} STREQUAL "YES")
 	message(STATUS "Using clang compiler plugin...")
 	target_compile_options(nimbro_fsm2
 		PUBLIC "-fplugin=$<TARGET_FILE:fsm_checker>"
