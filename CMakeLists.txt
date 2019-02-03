@@ -28,6 +28,14 @@ find_package(catkin REQUIRED COMPONENTS
 	actionlib_msgs
 )
 
+find_package(Clang QUIET)
+if(CLANG_INCLUDE_DIRS)
+	set(HAVE_PLUGIN "YES")
+else()
+	set(HAVE_PLUGIN "NO")
+	message(WARNING "Install clang headers for better diagnostics!")
+endif()
+
 add_message_files(FILES
 	StateInfo.msg
 	Info.msg
@@ -46,8 +54,8 @@ generate_messages(DEPENDENCIES
 
 catkin_package(
 	INCLUDE_DIRS include
-	LIBRARIES nimbro_fsm2
 	CATKIN_DEPENDS rosfmt
+	CFG_EXTRAS nimbro_fsm2.cmake
 )
 
 set(CMAKE_CXX_STANDARD 17)
