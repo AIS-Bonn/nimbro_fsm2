@@ -83,6 +83,9 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	target_compile_options(nimbro_fsm2
 		PUBLIC "-fplugin=$<TARGET_FILE:fsm_checker>"
 	)
+	target_compile_definitions(nimbro_fsm2
+		PUBLIC "NIMBRO_FSM2_CHECKED=1"
+	)
 	add_dependencies(nimbro_fsm2 fsm_checker)
 else()
 	message(WARNING "Consider switching to clang to make use of nimbro_fsm2's "

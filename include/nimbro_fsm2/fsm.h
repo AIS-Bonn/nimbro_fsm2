@@ -31,6 +31,12 @@
 #include "detail/watchdog.h"
 #include "introspection.h"
 
+#if !NIMBRO_FSM2_CHECKED
+#warning You are not compiling with the nimbro_fsm2 compiler plugin.\
+ You probably need to install clang and delete the build directories of\
+ nimbro_fsm2 and your package.
+#endif
+
 namespace nimbro_fsm2
 {
 
