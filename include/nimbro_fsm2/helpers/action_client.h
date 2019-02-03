@@ -22,12 +22,14 @@ enum class ActionState
 	Failed,
 };
 
-template<class Action>
+template<class ActionSpec>
 class ActionClient
 {
+private:
+	ACTION_DEFINITION(ActionSpec);
+	using Client = actionlib::SimpleActionClient<ActionSpec>;
+
 public:
-	using Client = actionlib::SimpleActionClient<Action>;
-	using Goal = typename Action::_action_goal_type::_goal_type;
 	using ActionState = nimbro_fsm2::helpers::ActionState;
 
 	explicit ActionClient(const std::string& topic);
@@ -36,15 +38,21 @@ public:
 	~ActionClient();
 
 	void setGoal(const Goal& goal);
+	void resend();
 
 	[[nodiscard]] ActionState step();
 
 	[[nodiscard]] actionlib::SimpleClientGoalState state()
 	{ return m_ac.getState(); }
 
-	[[nodiscard]] auto result()
+	[[nodiscard]] ResultConstPtr result()
 	{ return m_ac.getResult(); }
+
+	[[nodiscard]] FeedbackConstPtr feedback()
+	{ return m_feedback; }
 private:
+	void handleFeedback(const FeedbackConstPtr& feedback)
+	{ m_feedback = feedback; }
 
 	std::string m_topic;
 	Client m_ac;
@@ -54,6 +62,8 @@ private:
 	ros::Time m_startTime{ros::Time::now()};
 
 	ros::Duration m_connectTimeout{5.0};
+
+	FeedbackConstPtr m_feedback;
 };
 
 // IMPLEMENTATION
@@ -91,6 +101,17 @@ void ActionClient<Action>::setGoal(const ActionClient::Goal& goal)
 }
 
 template<typename Action>
+void ActionClient<Action>::resend()
+{
+	if(m_state != ActionState::Failed && m_state != ActionState::Succeeded)
+	{
+		throw std::logic_error("You called resend() without being in a terminal state (Succeeded/Failed)");
+	}
+
+	m_state = ActionState::Idle;
+}
+
+template<typename Action>
 ActionState ActionClient<Action>::step()
 {
 	switch(m_state)
@@ -119,7 +140,11 @@ ActionState ActionClient<Action>::step()
 			{
 				if(m_goal)
 				{
-					m_ac.sendGoal(*m_goal);
+					m_ac.sendGoal(*m_goal,
+						typename Client::SimpleDoneCallback{},
+						typename Client::SimpleActiveCallback{},
+						std::bind(&ActionClient<Action>::handleFeedback, this, std::placeholders::_1)
+					);
 					m_state = ActionState::InProcess;
 				}
 			}
@@ -127,6 +152,14 @@ ActionState ActionClient<Action>::step()
 
 		case ActionState::InProcess:
 		{
+			if(!m_ac.isServerConnected())
+			{
+				ROSFMT_ERROR("Lost connection to action server {}", m_topic);
+				m_ac.cancelGoal();
+				m_state = ActionState::Failed;
+				break;
+			}
+
 			auto acState = m_ac.getState();
 			if(acState.isDone())
 			{
