@@ -41,7 +41,7 @@ if(CLANG_INCLUDE_DIRS)
 	add_subdirectory(clang_plugin)
 else()
 	set(HAVE_PLUGIN "NO")
-	message(WARNING "Install clang headers for better diagnostics!")
+	message(WARNING "Install clang headers (Ubuntu: libclang-dev) for better diagnostics!")
 endif()
 
 add_message_files(FILES

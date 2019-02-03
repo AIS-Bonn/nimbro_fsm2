@@ -8,6 +8,9 @@ variables:
 #- apk add ttf-freefont graphviz
 catkin_build:
   stage: build
+  before_script:
+  - apt-get update
+  - apt-get install -y clang libclang-dev
   script:
     - git clone https://git.ais.uni-bonn.de/nimbroshared/ros_gitlab_ci.git
     - source ros_gitlab_ci/gitlab-ci.bash
