@@ -31,6 +31,7 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(Clang QUIET)
 if(CLANG_INCLUDE_DIRS)
 	set(HAVE_PLUGIN "YES")
+	add_subdirectory(clang_plugin)
 else()
 	set(HAVE_PLUGIN "NO")
 	message(WARNING "Install clang headers for better diagnostics!")
@@ -74,8 +75,9 @@ add_dependencies(nimbro_fsm2
 	${PROJECT_NAME}_generate_messages_cpp
 )
 
-add_subdirectory(clang_plugin)
-
+# If we have the compiler plugin, attach the compiler options for loading to
+# the nimbro_fsm2 target. NOTE: This is only used for internal targets,
+# for the exported version see cmake/nimbro_fsm2.cmake.in.
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	message(STATUS "Using clang compiler plugin...")
 	target_compile_options(nimbro_fsm2
