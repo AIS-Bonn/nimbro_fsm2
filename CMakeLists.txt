@@ -36,9 +36,9 @@ if(NOT CLANG_INCLUDE_DIRS)
 	find_path(CLANG_INCLUDE_DIRS "clang/Basic/Version.h" PATHS "/usr/lib/llvm-6.0/include")
 endif()
 
+# NOTE: HAVE_PLUGIN is used below in CFG_EXTRAS
 if(CLANG_INCLUDE_DIRS)
 	set(HAVE_PLUGIN "YES")
-	add_subdirectory(clang_plugin)
 else()
 	set(HAVE_PLUGIN "NO")
 	message(WARNING "Install clang headers (Ubuntu: libclang-dev) for better diagnostics!")
@@ -65,6 +65,12 @@ catkin_package(
 	CATKIN_DEPENDS rosfmt
 	CFG_EXTRAS nimbro_fsm2.cmake
 )
+
+# NOTE: We have to compile the plugin after catkin_package() to make sure it
+# ends up in the right place.
+if(HAVE_PLUGIN STREQUAL "YES")
+	add_subdirectory(clang_plugin)
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 
