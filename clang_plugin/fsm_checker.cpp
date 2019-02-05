@@ -36,6 +36,8 @@ auto getLoc(T& node)
 #endif
 }
 
+using TypeList = std::vector<const Type*>;
+
 auto stateConstructor = allOf(
 	isDefinition(),
 	unless(isDefaulted()),
@@ -63,6 +65,28 @@ auto ProblematicConstructorMatcher = cxxConstructorDecl(
 		)
 	)
 );
+
+auto FullySpecifiedState = cxxRecordDecl(
+	isDerivedFrom("nimbro_fsm2::detail::AbstractState"),
+	isDefinition()
+).bind("state");
+
+auto InitializeCallMatcher = cxxMemberCallExpr(callee(cxxMethodDecl(
+
+	// match nimbro_fsm2::FSM::initialize()
+	hasName("initialize"), ofClass(cxxRecordDecl(hasName("::nimbro_fsm2::FSM"))),
+
+	// retrieve type of local typedef "ReachableStates"
+	hasDescendant(typeAliasDecl(
+		// extract the decl nimbro_fsm2::detail::Collector<State...>
+		hasType(elaboratedType(namesType(type(hasUnqualifiedDesugaredType(
+			recordType(hasDeclaration(
+				classTemplateSpecializationDecl().bind("reachableStates")
+			))
+		))))),
+		hasName("ReachableStates")
+	))
+)));
 
 const char* PLUGIN_NAME = "nimbro_fsm2";
 
@@ -121,25 +145,109 @@ private:
 	unsigned int m_error;
 };
 
+class StateHandler : public MatchFinder::MatchCallback
+{
+public:
+	void run(const MatchFinder::MatchResult& result) override
+	{
+		auto state = result.Nodes.getNodeAs<CXXRecordDecl>("state");
+		if(!state)
+			std::abort();
+
+		if(state->isAbstract())
+			return;
+
+		m_states.push_back(state->getTypeForDecl());
+	}
+
+	const TypeList& states() const
+	{ return m_states; }
+private:
+	TypeList m_states;
+};
+
+class InitializeHandler : public MatchFinder::MatchCallback
+{
+public:
+	void run(const MatchFinder::MatchResult& result) override
+	{
+		auto collector = result.Nodes.getNodeAs<ClassTemplateSpecializationDecl>("reachableStates");
+		if(!collector)
+			std::abort();
+
+		m_matched = true;
+
+		auto& args = collector->getTemplateInstantiationArgs();
+
+		if(args.size() == 0)
+			return;
+
+		auto& pack = args[0];
+
+		if(pack.getKind() != TemplateArgument::Pack)
+			std::abort();
+
+		for(auto& arg : pack.getPackAsArray())
+		{
+			m_reachableStates.push_back(arg.getAsType().getTypePtr());
+		}
+	}
+
+	bool matched() const
+	{ return m_matched; }
+
+	const TypeList& reachableStates() const
+	{ return m_reachableStates; }
+private:
+	bool m_matched = false;
+	TypeList m_reachableStates;
+};
+
 class Consumer : public clang::ASTConsumer
 {
 public:
 	explicit Consumer(CompilerInstance& C)
 	 : m_C{C}
-	{}
+	{
+		m_warning = C.getDiagnostics().getCustomDiagID(
+			DiagnosticsEngine::Warning,
+			"This state is not reachable. Suggestion: Either create a "
+			"transition to it or add it to the list of start states in the "
+			"FSM::initialize() call."
+		);
+	}
 
 	void HandleTranslationUnit(clang::ASTContext &Context) override
 	{
 		MatchFinder finder;
 		InterestingHandler handler{m_C};
 		ProblematicHandler phandler{m_C};
+		InitializeHandler ihandler;
+		StateHandler stateHandler;
 
 		finder.addMatcher(ProblematicConstructorMatcher, &phandler);
 		finder.addMatcher(InterestingConstructorMatcher, &handler);
+		finder.addMatcher(InitializeCallMatcher, &ihandler);
+		finder.addMatcher(FullySpecifiedState, &stateHandler);
 		finder.matchAST(Context);
+
+		if(ihandler.matched())
+		{
+			auto& reachable = ihandler.reachableStates();
+
+			for(const Type* state : stateHandler.states())
+			{
+				auto it = std::find(reachable.begin(), reachable.end(), state);
+				if(it == reachable.end())
+				{
+					auto diag = m_C.getDiagnostics().Report(getLoc(*state->getAsCXXRecordDecl()), m_warning);
+				}
+			}
+		}
 	}
 private:
 	CompilerInstance& m_C;
+	unsigned int m_warning;
 };
 
 class Plugin : public clang::PluginASTAction

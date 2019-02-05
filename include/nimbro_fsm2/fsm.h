@@ -47,6 +47,11 @@ namespace detail
 	class AbstractState
 	{
 	};
+
+	template<class... T>
+	class Collector
+	{
+	};
 }
 
 /**
@@ -428,6 +433,10 @@ public:
 		namespace hana = boost::hana;
 
 		auto stateList = reachableStates<StartStates...>();
+
+		// This is read out and checked by the clang plugin against the list
+		// of all states
+		using ReachableStates [[maybe_unused]] = typename decltype(hana::unpack(stateList, hana::template_<detail::Collector>))::type;
 
 		ROS_INFO("Finite State Machine with states:");
 		boost::hana::for_each(stateList, [](auto state){
