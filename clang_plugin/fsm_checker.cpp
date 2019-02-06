@@ -3,6 +3,7 @@
 
 #include <iterator>
 #include <memory>
+#include <set>
 
 #include <llvm/Support/CommandLine.h>
 
@@ -203,6 +204,24 @@ private:
 	TypeList m_reachableStates;
 };
 
+class TransitCollector : public MatchFinder::MatchCallback
+{
+public:
+	void run(const MatchFinder::MatchResult& result) override
+	{
+		auto type = result.Nodes.getNodeAs<RecordType>("state");
+		if(!type)
+			std::abort();
+
+		m_transitions.insert(type);
+	}
+
+	const std::set<const RecordType*>& transitions() const
+	{ return m_transitions; }
+private:
+	std::set<const RecordType*> m_transitions;
+};
+
 class Consumer : public clang::ASTConsumer
 {
 public:
@@ -215,6 +234,133 @@ public:
 			"transition to it or add it to the list of start states in the "
 			"FSM::initialize() call."
 		);
+
+		m_transitWarning = C.getDiagnostics().getCustomDiagID(
+			DiagnosticsEngine::Warning,
+			"Transition %0 is specified in the template arguments, but it seems "
+			"it is never used. Consider removing it."
+		);
+	}
+
+	void checkStateDefRecurse(MatchFinder& finder, const CXXRecordDecl& classDecl, ASTContext& context)
+	{
+// 		llvm::errs() << "Recursing into " << classDecl.getName() << ", isComplete: " << classDecl.isCompleteDefinition() << "\n";
+
+		for(auto* method : classDecl.methods())
+		{
+			auto definition = method->getDefinition();
+			if(!definition)
+			{
+// 				llvm::errs() << "method " << method->getName() << " has no definition\n";
+// 				llvm::errs() << "late: " << method->isLateTemplateParsed() << "\n";
+				continue;
+			}
+
+			finder.match(*definition, context);
+		}
+
+		for(auto base : classDecl.bases())
+			checkStateDefRecurse(finder, *base.getType().getTypePtr()->getAsCXXRecordDecl()->getDefinition(), context);
+	}
+
+	void checkStateDefinition(clang::ASTContext& context, const CXXRecordDecl& classDecl)
+	{
+		// Heuristic: we check state definitions that are a) completely defined
+		// or b) have definitions in our main file.
+		// NOTE: a) is disabled for now, since it gives false positives on
+		//  states defined purely in the header, which are not fully
+		//  instantiated.
+
+		if(classDecl.isAbstract())
+			return;
+
+		bool inMainFile = false;
+		bool completelyDefined = true;
+
+		auto& sourceManager = context.getSourceManager();
+
+		for(auto* method : classDecl.methods())
+		{
+			auto definition = method->getDefinition();
+			if(!definition)
+			{
+				completelyDefined = false;
+				continue;
+			}
+
+			if(sourceManager.isInMainFile(sourceManager.getExpansionLoc(getLoc(*definition))))
+				inMainFile = true;
+		}
+
+		if(/*!completelyDefined &&*/ !inMainFile)
+			return;
+
+		// We now collect all transit() calls
+		TransitCollector collector;
+		{
+			MatchFinder finder;
+
+			auto transitMatcher = cxxMethodDecl(forEachDescendant(cxxMemberCallExpr(callee(
+				cxxMethodDecl(
+					hasName("transit"),
+					ofClass(cxxRecordDecl(hasName("State"))),
+					hasTemplateArgument(0, refersToType(
+						type().bind("state")
+					))
+				)
+			))));
+
+			finder.addMatcher(transitMatcher, &collector);
+
+			// I haven't found a way to traverse getDefinition() using AST matchers,
+			// so do that manually here.
+
+			checkStateDefRecurse(finder, classDecl, context);
+		}
+
+		// Find user-specified info
+		auto specMatcher = cxxRecordDecl(isDerivedFrom(cxxRecordDecl(
+			hasDescendant(typeAliasDecl(
+				hasName("Transitions"),
+				hasType(hasUnqualifiedDesugaredType(recordType(hasDeclaration(
+					classTemplateSpecializationDecl().bind("transitions")
+				))))
+			))
+		)));
+
+		auto specList = match(specMatcher, classDecl, context);
+		if(specList.empty())
+			std::abort();
+
+		auto& spec = specList.front();
+
+		auto transitArgs = spec.getNodeAs<ClassTemplateSpecializationDecl>("transitions");
+		if(!transitArgs || transitArgs->getTemplateInstantiationArgs().size() == 0)
+			std::abort();
+
+		auto specTransits = transitArgs->getTemplateInstantiationArgs()[0];
+
+		std::set<const RecordType*> specTypes;
+		for(auto& arg : specTransits.getPackAsArray())
+		{
+			auto type = arg.getAsType().getTypePtr();
+			if(type->isRecordType())
+				specTypes.insert(static_cast<const RecordType*>(type));
+		}
+
+		auto& detectedTransits = collector.transitions();
+		for(auto& specType : specTypes)
+		{
+			auto it = std::find(detectedTransits.begin(), detectedTransits.end(), specType);
+			if(it == detectedTransits.end())
+			{
+				auto diag = m_C.getDiagnostics().Report(
+					getLoc(classDecl),
+					m_transitWarning
+				);
+				diag.AddString(specType->getDecl()->getName());
+			}
+		}
 	}
 
 	void HandleTranslationUnit(clang::ASTContext &Context) override
@@ -244,10 +390,14 @@ public:
 				}
 			}
 		}
+
+		for(const Type* state : stateHandler.states())
+			checkStateDefinition(Context, *state->getAsCXXRecordDecl());
 	}
 private:
 	CompilerInstance& m_C;
 	unsigned int m_warning;
+	unsigned int m_transitWarning;
 };
 
 class Plugin : public clang::PluginASTAction
