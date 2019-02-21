@@ -49,9 +49,9 @@ void StateMachineGUI::initPlugin(qt_gui_cpp::PluginContext& ctx)
 
 	ctx.addWidget(m_w);
 
-	QTimer* timer = new QTimer(this);
-	QObject::connect(timer, SIGNAL(timeout()), SLOT(timerCB()));
-	timer->start(100);
+	m_timer = new QTimer(this);
+	QObject::connect(m_timer , SIGNAL(timeout()), SLOT(timerCB()));
+	m_timer ->start(100);
 
 	QObject::connect(m_ui->prefixComboBox, SIGNAL(activated(QString)), SLOT(subscribe()));
 	QObject::connect(m_ui->refreshButton, SIGNAL(clicked(bool)), SLOT(refreshTopicList()));
@@ -178,6 +178,7 @@ void StateMachineGUI::processStatus(const StatusConstPtr& msg)
 
 void StateMachineGUI::shutdownPlugin()
 {
+	m_timer->stop();
 	rqt_gui_cpp::Plugin::shutdownPlugin();
 	m_sub_status.shutdown();
 	m_sub_info.shutdown();

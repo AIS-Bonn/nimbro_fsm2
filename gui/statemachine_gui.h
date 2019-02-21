@@ -56,6 +56,8 @@ private:
 	QWidget* m_w;
 	Ui_StateMachineGUI* m_ui;
 
+	QTimer* m_timer;
+
 	QMutex m_stateListMutex;
 	nimbro_fsm2::InfoConstPtr m_stateList;
 
