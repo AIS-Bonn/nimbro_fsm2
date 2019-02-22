@@ -404,6 +404,7 @@ void NodeGraph::generateGraph()
 
     //create stringstream for dot graph
     std::stringstream ss;
+	ss.imbue(std::locale::classic());
 
     //remember node ids for creating edges
     std::map<std::string, int> map_node_id;
@@ -413,9 +414,13 @@ void NodeGraph::generateGraph()
     std::map<std::string, std::vector<std::string>> subgraph_list;
     size_t dotOutSize = 1000;
     ss << "digraph {\n";
-    if(m_graph_ratio)
+
+	//widget size in inch for the dot size parameter:
+	//(float)width() / logicalDpiX(), (float)height() / logicalDpiY()
+
+	if(m_graph_ratio)
     {
-        std::string ratio = boost::lexical_cast<std::string>(height() / (float)width());
+        float ratio = height() / (float)width();
         ss << "ratio=" << ratio << ";\n";
     }
     if(m_graph_transpose)
