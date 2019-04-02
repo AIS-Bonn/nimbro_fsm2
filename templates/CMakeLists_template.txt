@@ -1,0 +1,45 @@
+cmake_minimum_required(VERSION 2.8)
+
+# We default to clang compiler in order to use the nimbro_fsm2 clang plugin
+if(NOT CMAKE_CXX_COMPILER)
+	find_program(CLANG_EXECUTABLE clang)
+	find_program(CLANGPP_EXECUTABLE clang++)
+	if(CLANG_EXECUTABLE)
+		set(CMAKE_C_COMPILER ${CLANG_EXECUTABLE})
+		set(CMAKE_CXX_COMPILER ${CLANGPP_EXECUTABLE})
+	else()
+		message(WARNING "Install clang to get better diagnostics!")
+	endif()
+else()
+	message(STATUS "CMAKE_CXX_COMPILER already set to ${CMAKE_CXX_COMPILER}")
+endif()
+
+project(@package_name)
+
+find_package(catkin REQUIRED COMPONENTS
+	roscpp
+	nimbro_fsm2
+)
+
+catkin_package(
+)
+
+include_directories(include ${catkin_INCLUDE_DIRS})
+
+set(CMAKE_CXX_STANDARD 17)
+
+@{driver_lower = driver.lower()}
+@{state_lower = state_name.lower()}
+@{
+state_path = "src/states/" + state_name.lower() + ".cpp"
+if state_ns:
+	state_path ="src/states/" + state_ns + "/" + state_name.lower() + ".cpp"
+}
+add_executable(@package_name
+	src/@driver_lower@ .cpp
+	@[if create_state]@state_path@[end if]
+)
+
+target_link_libraries(@package_name
+	${catkin_LIBRARIES}
+)

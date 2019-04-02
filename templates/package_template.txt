@@ -1,0 +1,13 @@
+<package format="2">
+	<name>@package_name</name>
+	<version>1.0.0</version>
+	<description>@package_name</description>
+
+	<maintainer email="template@@uni-bonn.de">Created from nimbro_fsm2 template</maintainer>
+
+	<license>BSD</license>
+
+	<buildtool_depend>catkin</buildtool_depend>
+	<depend>nimbro_fsm2</depend>
+
+</package>
