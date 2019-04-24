@@ -48,7 +48,7 @@ except:
 try:
     package_path = rospack.get_path(package_name)
 except:
-    print "Can't find '" + package_path + "' package."
+    print "Can't find '" + package_name + "' package."
     sys.exit()
 
 
