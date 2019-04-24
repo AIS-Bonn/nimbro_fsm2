@@ -46,7 +46,7 @@ pages:
   script:
   - git clone --depth 1 git://github.com/mosra/m.css
   - mkdir build
-  - m.css/doxygen/dox2html5.py Doxyfile-mcss
+  - m.css/documentation/doxygen.py Doxyfile-mcss
   - mv build/doc-mcss/html/ public/
   artifacts:
     paths:
