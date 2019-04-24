@@ -186,4 +186,21 @@ ActionState ActionClient<Action>::step()
 }
 }
 
+inline std::ostream& operator<<(std::ostream& stream, nimbro_fsm2::helpers::ActionState state)
+{
+	using namespace nimbro_fsm2::helpers;
+
+	switch(state)
+	{
+		case ActionState::Connecting: stream << "Connecting"; return stream;
+		case ActionState::Idle:       stream << "Idle";       return stream;
+		case ActionState::InProcess:  stream << "InProcess";  return stream;
+		case ActionState::Succeeded:  stream << "Succeeded";  return stream;
+		case ActionState::Failed:     stream << "Failed";     return stream;
+	}
+
+	stream << "INVALID";
+	return stream;
+}
+
 #endif
