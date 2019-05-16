@@ -34,7 +34,7 @@ while search_path != stop_path:
     (search_path, child_path) = os.path.split(search_path)
 
 if package_name == None:
-    print "Can't find current package"
+    print "Can't find current package. Is the workspace sourced?"
     sys.exit()
 
 #find nimbro_fsm2 package path to open the template files
@@ -48,7 +48,7 @@ except:
 try:
     package_path = rospack.get_path(package_name)
 except:
-    print "Can't find '" + package_name + "' package."
+    print "Can't find '" + package_name + "' package. Is the workspace sourced?"
     sys.exit()
 
 
