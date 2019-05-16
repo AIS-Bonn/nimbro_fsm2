@@ -15,6 +15,9 @@ Create your ROS package as usual (e.g. using
 `catkin_create_pkg NAME nimbro_fsm2` or from scratch). Make sure it depends
 on @p nimbro_fsm2 in your `package.xml` and `CMakeLists.txt`.
 
+You can also create a simple nimbro_fsm2 ROS package using the template script `rosrun nimbro_fsm2 create_fsm`.
+`rosrun nimbro_fsm2 create_state` generates a new state into an existing FSM package.
+
 We recommend the following directory layout:
 
     my_package
