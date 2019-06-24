@@ -9,6 +9,7 @@
 #include <QTimer>
 #include <QMouseEvent>
 #include <QResizeEvent>
+#include <QRegularExpression>
 
 #include <nimbro_fsm2/Status.h>
 #include <nimbro_fsm2/Info.h>
@@ -108,6 +109,9 @@ private:
 
 	QRect scaleRect(QRect rect);
 	QPolygonF scalePolygon(QPolygonF poly);
+
+	QRegularExpression m_regEx;
+
 
 };
 

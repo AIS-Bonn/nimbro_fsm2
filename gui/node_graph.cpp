@@ -129,6 +129,8 @@ NodeGraph::NodeGraph(QWidget* parent)
     m_timer->setInterval(100);
     m_timer->start();
 
+	m_regEx.setPattern(R"EOS(((?P<ns>\w[\w0-9]*)::)?(?P<name>.*))EOS");
+
     connect(m_timer, SIGNAL(timeout()), this, SLOT(update()));
     setMouseTracking(true);
 
@@ -410,7 +412,7 @@ void NodeGraph::generateGraph()
     std::map<std::string, int> map_node_id;
 
 
-    //sort nodes according t namespace
+    //sort nodes according to namespace
     std::map<std::string, std::vector<std::string>> subgraph_list;
     size_t dotOutSize = 1000;
     ss << "digraph {\n";
@@ -430,27 +432,30 @@ void NodeGraph::generateGraph()
     {
         auto& state = m_stateList->states[i];
 
+
 		if(m_graph_subgraph)
 		{
-			std::size_t pos_name = state.name.find("::");
-			std::size_t pos_ns = state.name.find_last_of("::");
-			std::string name = state.name;
-			std::string ns = "";
+			auto match = m_regEx.match(QString::fromStdString(state.name));
+			std::string name;
+			std::string ns;
 
-			if(pos_name != std::string::npos)
+			if(match.hasMatch())
 			{
-				name = state.name.substr(pos_name + 2);
-				ns = state.name.substr(0,pos_ns-1);
+				name = match.captured("name").toStdString();
+				ns = match.captured("ns").toStdString();
+			}
+			else
+			{
+				ROS_WARN("Could not match class name '%s'", state.name.c_str());
+				name = state.name;
 			}
 
-			map_node_id[name] = i;
 			subgraph_list[ns].push_back(name);
 		}
 		else
-		{
-			map_node_id[state.name] = i;
 			subgraph_list[""].push_back(state.name);
-		}
+
+		map_node_id[state.name] = i;
     }
 
     //Nodes
@@ -467,7 +472,11 @@ void NodeGraph::generateGraph()
 
         for(auto& node : nodes)
         {
-            ss << fmt::format("{}v{}  [ label=\"{}\" shape=box];\n",indent, map_node_id[node], node);
+			std::string full_name = node;
+			if(ns != "")
+				full_name = ns + "::" + node;
+
+            ss << fmt::format("{}v{}  [ label=\"{}\" shape=box];\n",indent, map_node_id[full_name], node);
             dotOutSize+=2000;
         }
 
@@ -482,17 +491,15 @@ void NodeGraph::generateGraph()
         auto& state = m_stateList->states[i];
         for(auto succ : state.successors)
         {
-			std::string name = succ;
-			std::size_t pos_name = succ.find("::");
-			if(m_graph_subgraph && pos_name != std::string::npos)
-				name = succ.substr(pos_name + 2);
-            ss << fmt::format("  v{} -> v{};",i, map_node_id[name]);
+		    ss << fmt::format("  v{} -> v{};",i, map_node_id[succ]);
             dotOutSize+=1000;
         }
         if(state.successors.size() > 0)
             ss << "\n";
     }
     ss << "}\n";
+
+	std::cout << ss.str() << std::endl;
 
     //Run dot
     char dotOut[dotOutSize];
@@ -502,7 +509,6 @@ void NodeGraph::generateGraph()
     QJsonDocument qd = QJsonDocument::fromJson(QString(dotOut).toUtf8());
     interpreteJsonGraph(qd);
 
-// 	debugGraph();
 
     m_graph.init = true;
 	updateStatus();
