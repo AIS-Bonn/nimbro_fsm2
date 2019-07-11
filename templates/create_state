@@ -10,6 +10,10 @@ import rospkg
 import copy
 import argparse
 from catkin_pkg.packages import find_packages
+import subprocess
+
+email = "template@ais.uni-bonn.de"
+maintainer = "Maintainer"
 
 #Find current package
 search_path = os.getcwd()
@@ -63,6 +67,11 @@ argparser.add_argument("-c", "--only_create", help="Create the .cpp and .h file 
 
 args = argparser.parse_args()
 
+home = os.path.expanduser('~')
+if os.path.exists(home + '/.gitconfig'):
+    maintainer = subprocess.check_output(["git", "config", "--global", "user.name"]).rstrip()
+    email = subprocess.check_output(["git", "config", "--global", "user.email"]).rstrip()
+
 #dictionary to pass all variables to empy
 vars = {
     "state_name" : "TestState",
@@ -70,6 +79,8 @@ vars = {
     "fsm" : "fsm",
     "driver" : "driver",
     "package_name" : package_name,
+    "maintainer" : maintainer,
+    "email" : email,
 }
 if args.name:
     vars["state_name"] = args.name

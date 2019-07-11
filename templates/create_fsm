@@ -9,8 +9,10 @@ import sys
 import rospkg
 import copy
 import argparse
+import subprocess
 
-
+email = "template@ais.uni-bonn.de"
+maintainer = "Maintainer"
 
 #Creating directory
 def create_folder(path):
@@ -54,6 +56,10 @@ args = argparser.parse_args()
 
 package_name = args.name
 
+home = os.path.expanduser('~')
+if os.path.exists(home + '/.gitconfig'):
+    maintainer = subprocess.check_output(["git", "config", "--global", "user.name"]).rstrip()
+    email = subprocess.check_output(["git", "config", "--global", "user.email"]).rstrip()
 
 
 #Create needed folder
@@ -70,6 +76,8 @@ template_vars = {
     #"state_file" : "test_state",
     "state_name" : "MyState",
     "state_ns" : None,
+    "maintainer" : maintainer,
+    "email" : email
 }
 
 if args.fsm:

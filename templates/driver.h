@@ -1,5 +1,5 @@
 // Driver for @package_name
-// Author: FSM2 Template <template@@ais.uni-bonn.de>
+// Author: @maintainer <@email>
 
 @{headerdef = package_name.upper() + "_" + driver.upper()}
 

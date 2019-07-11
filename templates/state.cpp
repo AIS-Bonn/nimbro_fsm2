@@ -1,5 +1,5 @@
 // @state_name state
-// Author: FSM2 Template <template@@ais.uni-bonn.de>
+// Author: @maintainer <@email>
 
 @{file_name = state_name.lower()}
 

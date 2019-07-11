@@ -3,7 +3,7 @@
 	<version>1.0.0</version>
 	<description>@package_name</description>
 
-	<maintainer email="template@@uni-bonn.de">Created from nimbro_fsm2 template</maintainer>
+	<maintainer email="@email">@maintainer</maintainer>
 
 	<license>BSD</license>
 

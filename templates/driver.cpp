@@ -1,5 +1,5 @@
 // Driver for @package_name
-// Author: FSM2 Template <template@@ais.uni-bonn.de>
+// Author: @maintainer <@email>
 
 @{
 state_include = state_name.lower()
