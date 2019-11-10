@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.2)
 
 # We default to clang compiler in order to use our own clang plugin.
-if(NOT CMAKE_CXX_COMPILER)
+if(NOT CMAKE_CXX_COMPILER AND NOT DEFINED ENV{CXX})
 	find_program(CLANG_EXECUTABLE clang)
 	find_program(CLANGPP_EXECUTABLE clang++)
 	if(CLANG_EXECUTABLE)
@@ -28,17 +28,16 @@ find_package(catkin REQUIRED COMPONENTS
 	actionlib_msgs
 )
 
-# First try to find ClangConfig.cmake
-find_package(Clang QUIET)
-
-# On clang 6.0, this fails (at least on Ubuntu)
-if(NOT CLANG_INCLUDE_DIRS)
-	find_path(CLANG_INCLUDE_DIRS "clang/Basic/Version.h" PATHS "/usr/lib/llvm-6.0/include")
-endif()
+find_path(CLANG_INCLUDE_DIRS "clang/Basic/Version.h" PATHS
+	"/usr/lib/llvm-9/include"
+	"/usr/lib/llvm-8/include"
+	"/usr/lib/llvm-6.0/include"
+)
 
 # NOTE: HAVE_PLUGIN is used below in CFG_EXTRAS
 if(CLANG_INCLUDE_DIRS)
 	set(HAVE_PLUGIN "YES")
+	message(STATUS "Found clang headers at ${CLANG_INCLUDE_DIRS}")
 else()
 	set(HAVE_PLUGIN "NO")
 	message(WARNING "Install clang headers (Ubuntu: libclang-dev) for better diagnostics!")
