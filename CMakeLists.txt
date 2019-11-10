@@ -28,11 +28,22 @@ find_package(catkin REQUIRED COMPONENTS
 	actionlib_msgs
 )
 
-find_path(CLANG_INCLUDE_DIRS "clang/Basic/Version.h" PATHS
-	"/usr/lib/llvm-9/include"
-	"/usr/lib/llvm-8/include"
-	"/usr/lib/llvm-6.0/include"
-)
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
+	message(STATUS "Clang version: ${CMAKE_CXX_COMPILER_VERSION}")
+	if("${CMAKE_CXX_COMPILER_VERSION}" MATCHES "^([0-9]+)\\.([0-9]+).*$")
+		set(CLANG_VERSION_MAJOR ${CMAKE_MATCH_1})
+		set(CLANG_VERSION_MINOR ${CMAKE_MATCH_2})
+	else()
+		message(WARNING "Could not parse Clang version string")
+		set(CLANG_VERSION_MAJOR "unknown")
+		set(CLANG_VERSION_MINOR "unknown")
+	endif()
+
+	find_path(CLANG_INCLUDE_DIRS "clang/Basic/Version.h" PATHS
+		"/usr/lib/llvm-${CLANG_VERSION_MAJOR}/include"
+		"/usr/lib/llvm-${CLANG_VERSION_MAJOR}.${CLANG_VERSION_MINOR}/include"
+	)
+endif()
 
 # NOTE: HAVE_PLUGIN is used below in CFG_EXTRAS
 if(CLANG_INCLUDE_DIRS)
