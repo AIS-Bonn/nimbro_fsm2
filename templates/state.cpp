@@ -1,34 +1,28 @@
 // @state_name state
 // Author: @maintainer <@email>
-
 @{file_name = state_name.lower()}
-
 #include "@file_name@ .h"
 
 namespace @package_name
 {
-
 @[if state_ns]namespace @state_ns
 {
 @[end if]
-
-//enter: code is executed once when entering this state
 void @state_name@ ::enter()
 {
+	// Executed once when entering this state
 }
 
-//execute
 Transition @state_name@ ::execute()
 {
-
+	// Execute: Determines the action on each cycle
 	return stay();
 }
 
-//leave: code is executed once when exiting this state
 void @state_name@ ::leave()
 {
+	// Executed once when leaving this state
 }
 
-@[if state_ns]}//State NS@[end if]
-
-}//NS
+@[if state_ns]} // @state_ns@[end if]
+} // @package_name

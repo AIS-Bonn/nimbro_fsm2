@@ -1,8 +1,6 @@
 // Driver for @package_name
 // Author: @maintainer <@email>
-
 @{headerdef = package_name.upper() + "_" + driver.upper()}
-
 #ifndef @headerdef@ _H
 #define @headerdef@ _H
 
@@ -14,12 +12,13 @@ namespace @package_name
 class @driver
 {
 public:
-        @driver@ ();
+	@driver@ ();
 
-        void work();
+	void work();
 private:
-        FSM m_fsm;
+	FSM m_fsm;
 };
 
 }
+
 #endif

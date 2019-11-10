@@ -9,5 +9,4 @@
 
 	<buildtool_depend>catkin</buildtool_depend>
 	<depend>nimbro_fsm2</depend>
-
 </package>

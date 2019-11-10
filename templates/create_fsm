@@ -1,7 +1,10 @@
 #!/usr/bin/python
-#kate: tab-width 4; indent-width 4; replace-tabs on;
-#Creating a new nimbro_fsm2 package
-#Author: Christian Lenz <lenz@ais.uni-bonn.de>
+# Creating a new nimbro_fsm2 package
+# Author: Christian Lenz <lenz@ais.uni-bonn.de>
+
+# kate: tab-width 4; indent-width 4; replace-tabs on;
+
+from __future__ import print_function
 
 import os
 import em
@@ -10,43 +13,43 @@ import rospkg
 import copy
 import argparse
 import subprocess
+import errno
 
-email = "template@ais.uni-bonn.de"
-maintainer = "Maintainer"
-
-#Creating directory
-def create_folder(path):
+# Determine the author information
+def get_git_config(name):
     try:
-        os.mkdir(path)
-    except OSError:
-        print ("Folder %s already exists." % path)
+        return subprocess.check_output(["git", "config", name]).strip()
+    except subprocess.CalledProcessError as e:
+        print('git config {} returned exit code {}. Please set up your git config first!'.format(
+            name, e.returncode
+        ))
+        raise
 
-#Interpret template file
-def interpret_template(template_path, output_path, global_vars):
-    output = open(output_path, "w")
-    gv = copy.deepcopy(global_vars)
-    interpretercmake = em.Interpreter(globals = gv, output = output)
+email = get_git_config("user.email")
+maintainer = get_git_config("user.name")
+
+# Creating directory
+def makedirs(path):
     try:
-        interpretercmake.file(open(template_path))
-    finally:
-        interpretercmake.shutdown()
-    output.close()
+        os.makedirs(path)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
 
-
-#find nimbro_fsm2 package path to open the template files
+# find nimbro_fsm2 package path to open the template files
 rospack = rospkg.RosPack()
 try:
-    fsm2_path = rospack.get_path('nimbro_fsm2') + "/templates/"
+    fsm2_path = os.path.join(rospack.get_path('nimbro_fsm2'), "templates")
 except:
-    print "Can't find nimbro_fsm2 package. No idea where the templates are :("
+    print("Can't find nimbro_fsm2 package. No idea where the templates are :(")
     sys.exit()
 
-#argparse defining all optional arguments
-argparser = argparse.ArgumentParser(description = "Generate a new nimbro_fsm2 state .cpp and .h file at the current path")
+# Parse arguments
+argparser = argparse.ArgumentParser(description = "Generate a new nimbro_fsm2 FSM package")
 
-argparser.add_argument("name", help="Fsm package name")
+argparser.add_argument("name", help="FSM package name")
 argparser.add_argument("-s", "--create_state", help="Create a example state", action="store_true")
-argparser.add_argument("-fsm", help="fsm header file name. Default: 'fsm.h'")
+argparser.add_argument("--fsm", help="fsm header file name. Default: 'fsm.h'")
 argparser.add_argument("-d", "--driver", help="driver class name. Default: 'Driver'.")
 argparser.add_argument("--state_name", help="State name. Only used if a new state is created. Default: 'MyState'")
 argparser.add_argument("--state_ns", help="State namespace. Only used if a new state is created. Default: no namespace")
@@ -56,17 +59,9 @@ args = argparser.parse_args()
 
 package_name = args.name
 
-home = os.path.expanduser('~')
-if os.path.exists(home + '/.gitconfig'):
-    maintainer = subprocess.check_output(["git", "config", "--global", "user.name"]).rstrip()
-    email = subprocess.check_output(["git", "config", "--global", "user.email"]).rstrip()
-
-
-#Create needed folder
-create_folder(package_name)
-create_folder(package_name + "/src")
-create_folder(package_name + "/src/states")
-
+# Create needed folder structure
+makedirs(package_name)
+makedirs(os.path.join(package_name, 'src', 'states'))
 
 template_vars = {
     "package_name" : args.name,
@@ -80,6 +75,17 @@ template_vars = {
     "email" : email
 }
 
+# Interpret template file
+def interpret_template(template_path, output_path, global_vars):
+    output = open(os.path.join(package_name, output_path), "w")
+    gv = copy.deepcopy(global_vars)
+    interpretercmake = em.Interpreter(globals = gv, output = output)
+    try:
+        interpretercmake.file(open(os.path.join(fsm2_path, template_path)))
+    finally:
+        interpretercmake.shutdown()
+    output.close()
+
 if args.fsm:
     template_vars["fsm"] = args.fsm
 
@@ -92,51 +98,35 @@ if args.state_name:
 if args.state_ns:
     template_vars["state_ns"] = args.state_ns
 
+# Create CMakeLists
+interpret_template("CMakeLists_template.txt", "CMakeLists.txt", template_vars)
 
+# Create package.xml
+interpret_template("package_template.txt", "package.xml", template_vars)
 
+# Create driver.cpp
+interpret_template("driver.cpp", os.path.join("src", template_vars["driver"].lower() + ".cpp"), template_vars)
 
-#Create CMakeLists
-interpret_template(fsm2_path + "CMakeLists_template.txt", package_name + "/CMakeLists.txt", template_vars)
+# Create driver.h
+interpret_template("driver.h", os.path.join("src", template_vars["driver"].lower() + ".h"), template_vars)
 
-#Create package.xml
-interpret_template(fsm2_path + "package_template.txt", package_name + "/package.xml", template_vars)
-
-#Create driver.cpp
-interpret_template(fsm2_path + "driver.cpp", package_name + "/src/" + template_vars["driver"].lower() + ".cpp", template_vars)
-
-#Create driver.h
-interpret_template(fsm2_path + "driver.h", package_name + "/src/" + template_vars["driver"].lower() + ".h", template_vars)
-
-#Create fsm.h
-interpret_template(fsm2_path + "fsm.h", package_name + "/src/" + template_vars["fsm"] + ".h", template_vars)
+# Create fsm.h
+interpret_template("fsm.h", os.path.join("src", template_vars["fsm"] + ".h"), template_vars)
 
 if args.create_state:
-
-    template_vars["fsm"] = "../" + template_vars["fsm"]
-    state_path = package_name + "/src/states/"
+    template_vars["fsm"] = os.path.join("..", template_vars["fsm"])
+    state_path = "src/states"
 
     if template_vars["state_ns"]:
-        create_folder(package_name + "/src/states/" + template_vars["state_ns"])
-        state_path = state_path + template_vars["state_ns"] + "/"
+        makedirs(os.path.join(package_name, "src/states", template_vars["state_ns"]))
+        state_path = os.path.join(state_path, template_vars["state_ns"])
 
-        template_vars["fsm"] = "../" + template_vars["fsm"]
+        template_vars["fsm"] = os.path.join("..", template_vars["fsm"])
 
+    state_path = os.path.join(state_path, template_vars["state_name"].lower())
 
-    state_path = state_path + template_vars["state_name"].lower()
+    # Create state.cpp
+    interpret_template("state.cpp", state_path + ".cpp", template_vars)
 
-
-    #Create state.cpp
-    interpret_template(fsm2_path + "state.cpp", state_path + ".cpp", template_vars)
-
-    #Create state.h
-    interpret_template(fsm2_path + "state.h", state_path + ".h", template_vars)
-
-
-
-
-
-
-
-
-
-
+    # Create state.h
+    interpret_template("state.h", state_path + ".h", template_vars)

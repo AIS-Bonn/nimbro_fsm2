@@ -1,8 +1,6 @@
-// fsm header for @package_name
+// FSM types for @package_name
 // Author: @maintainer <@email>
-
 @{headerdef = package_name.upper()}
-
 #ifndef @headerdef@ _H
 #define @headerdef@ _H
 

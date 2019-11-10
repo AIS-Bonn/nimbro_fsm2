@@ -1,6 +1,5 @@
 // Driver for @package_name
 // Author: @maintainer <@email>
-
 @{
 state_include = state_name.lower()
 if state_ns:
@@ -11,16 +10,12 @@ if not state_ns:
 	state_ns = ""
 else:
 	state_ns = state_ns + "::"
-
-
 }
-
 #include "@driver_lower@ .h"
 
 #include <ros/init.h>
-
-@[if create_state]#include "states/@state_include@ .h"@[end if]
-
+@[if create_state]#include "states/@state_include@ .h"
+@[end if]
 namespace @package_name
 {
 
