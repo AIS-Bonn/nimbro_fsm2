@@ -8,6 +8,7 @@
 #include <variant>
 
 #include <brigand/brigand.h>
+#include <type_name/type_name.hpp>
 
 #include <ros/time.h>
 
@@ -16,7 +17,6 @@
 
 #include "detail/ros_interface.h"
 #include "detail/has_to_string.h"
-#include "detail/type_name.h"
 #include "detail/is_defined.h"
 #include "detail/format.h"
 #include "detail/watchdog.h"
@@ -71,7 +71,7 @@ template<class DriverClass>
 class FSM
 {
 public:
-	static constexpr auto Namespace = detail::namespace_of(detail::type_name<DriverClass>());
+	static constexpr auto Namespace = type_name::namespace_of_v<DriverClass>;
 
 	class Transition;
 
@@ -163,18 +163,18 @@ public:
 			return m_data.index() != 0;
 		}
 
-		static Transition _unchecked(std::unique_ptr<StateBase>&& state, const char* label)
+		static Transition _unchecked(std::unique_ptr<StateBase>&& state, const std::string_view& label)
 		{ return Transition(std::move(state), label); }
 
-		constexpr const char* label() const
+		constexpr std::string_view label() const
 		{ return m_label; }
 	private:
-		explicit Transition(std::unique_ptr<StateBase>&& state, const char* label)
+		explicit Transition(std::unique_ptr<StateBase>&& state, const std::string_view& label)
 		 : m_data{std::move(state)}, m_label{label}
 		{}
 
 		std::variant<Stay, std::unique_ptr<StateBase>> m_data;
-		const char* m_label;
+		std::string_view m_label;
 	};
 
 	/**
@@ -209,13 +209,15 @@ public:
 		/**
 		 * @brief State name
 		 *
-		 * This state name is extracted at compile time and stored as a
-		 * @p boost::hana::string. You can use `.c_str()` to get a runtime
-		 * string:
+		 * This state name is extracted at compile time and stored either as
+		 * @p std::string_view (GCC) or a custom static string type (clang).
+		 * You can use `.c_str()` to get a runtime string.
 		 *
 		 * @snippet demo.cpp StateName
 		 **/
-		static constexpr auto Name = detail::relative_name<Derived>(Namespace);
+		static constexpr auto Name = type_name::relative_name_v<
+			Derived, DriverClass
+		>;
 
 		/**
 		 * @brief Elapsed time
@@ -561,7 +563,7 @@ public:
 				ROSFMT_INFO("{}", messages);
 			}
 
-			const char* label = nextState.label();
+			auto label = nextState.label();
 			switchState(std::move(nextState), label);
 		}
 	}
@@ -574,8 +576,8 @@ public:
 	 **/
 	[[nodiscard]] std::string currentStateName() const
 	{
-		if(m_stateLabel)
-			return m_stateLabel;
+		if(!m_stateLabel.empty())
+			return std::string{m_stateLabel};
 		else
 			return {};
 	}
@@ -595,7 +597,7 @@ public:
 	}
 
 private:
-	void switchState(std::unique_ptr<StateBase>&& state, const char* label)
+	void switchState(std::unique_ptr<StateBase>&& state, const std::string_view& label)
 	{
 		if(m_state)
 		{
@@ -615,7 +617,7 @@ private:
 			m_state->doEnter();
 		});
 
-		m_rosInterface.pushStateHistory(m_stateLabel);
+		m_rosInterface.pushStateHistory(std::string{m_stateLabel});
 	}
 
 	void sendROSStatus(const std::string& messages)
@@ -625,14 +627,14 @@ private:
 		if constexpr(detail::hasToString<DriverClass>(0))
 			driverInfo = m_driver.toString();
 
-		m_rosInterface.publishStatus(m_stateLabel, driverInfo, messages);
+		m_rosInterface.publishStatus(std::string{m_stateLabel}, driverInfo, messages);
 	}
 
 	DriverClass& m_driver;
 	std::unique_ptr<StateBase> m_state;
-	const char* m_stateLabel = nullptr;
+	std::string_view m_stateLabel = nullptr;
 
-	using StateWithName = std::pair<std::unique_ptr<StateBase>, const char*>;
+	using StateWithName = std::pair<std::unique_ptr<StateBase>, std::string_view>;
 	using StateFactory = std::function<StateWithName()>;
 	std::map<std::string, StateFactory> m_factories;
 

@@ -123,10 +123,10 @@ void ROSInterface::pushStateHistory(const std::string& state)
 	m_d->history.push_back(std::move(stateStatus));
 }
 
-void ROSInterface::publishStatus(const char* currentState, const std::string& driverInfo, const std::string& messages)
+void ROSInterface::publishStatus(const std::string_view& currentState, const std::string& driverInfo, const std::string& messages)
 {
 	Status status;
-	status.current_state = currentState ? currentState : "<not running>";
+	status.current_state = currentState.empty() ? "<not running>" : currentState;
 	status.driver_info = driverInfo;
 	status.display_messages = messages;
 

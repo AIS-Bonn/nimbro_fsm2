@@ -39,7 +39,7 @@ public:
 
 	void pushStateHistory(const std::string& state);
 	void updateCurrentState();
-	void publishStatus(const char* currentState, const std::string& driverInfo, const std::string& messages);
+	void publishStatus(const std::string_view& state, const std::string& driverInfo, const std::string& messages);
 	void publishInfo(const Info& msg);
 private:
 	class Private;
