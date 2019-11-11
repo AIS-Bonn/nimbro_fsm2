@@ -5,6 +5,8 @@
 
 #include <catch_ros/catch.hpp>
 
+#include <ros/init.h>
+
 class TestDriver
 {
 public:

@@ -87,7 +87,7 @@ set(CMAKE_CXX_STANDARD 17)
 include_directories(${catkin_INCLUDE_DIRS} include)
 
 add_library(nimbro_fsm2
-	src/detail/action_interface.cpp
+	src/detail/ros_interface.cpp
 	src/detail/format.cpp
 	src/detail/watchdog.cpp
 )

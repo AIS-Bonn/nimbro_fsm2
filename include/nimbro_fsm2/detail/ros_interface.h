@@ -5,6 +5,9 @@
 #define NIMBRO_FSM2_DETAIL_ACTION_INTERFACE_H
 
 #include <memory>
+#include <vector>
+
+#include <nimbro_fsm2/Info.h>
 
 namespace ros { class NodeHandle; }
 
@@ -14,7 +17,7 @@ namespace detail
 {
 
 // NOTE: Implemented using pimpl to keep actionlib dependency hidden
-class ActionInterface
+class ROSInterface
 {
 public:
 	enum class Result
@@ -25,13 +28,19 @@ public:
 		NotConstructible,
 	};
 
-	explicit ActionInterface(const ros::NodeHandle& nh);
-	~ActionInterface();
+	ROSInterface();
+	explicit ROSInterface(const ros::NodeHandle& nh);
+	~ROSInterface();
 
 	bool changeRequested() const;
 	std::string requestedState() const;
 
 	void report(Result result);
+
+	void pushStateHistory(const std::string& state);
+	void updateCurrentState();
+	void publishStatus(const char* currentState, const std::string& driverInfo, const std::string& messages);
+	void publishInfo(const Info& msg);
 private:
 	class Private;
 

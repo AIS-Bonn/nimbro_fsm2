@@ -11,19 +11,12 @@
 #include <boost/hana/set.hpp>
 #include <boost/hana/for_each.hpp>
 
-#include <boost/circular_buffer.hpp>
-
 #include <ros/time.h>
-#include <ros/node_handle.h>
-#include <ros/publisher.h>
-
-#include <nimbro_fsm2/Info.h>
-#include <nimbro_fsm2/Status.h>
 
 #include <rosfmt/rosfmt.h>
 #include <fmt/format.h>
 
-#include "detail/action_interface.h"
+#include "detail/ros_interface.h"
 #include "detail/has_to_string.h"
 #include "detail/type_name.h"
 #include "detail/is_defined.h"
@@ -403,17 +396,21 @@ public:
 	 * @brief Constructor
 	 *
 	 * @param driver Reference to an instance of your driver class
-	 * @param nh ROS NodeHandle for the ROS API. The default uses your node's
-	 *           private scope.
+	 * @param nh ROS NodeHandle for the ROS API.
 	 **/
-	explicit FSM(DriverClass& driver, const ros::NodeHandle& nh = {"~"})
+	explicit FSM(DriverClass& driver, const ros::NodeHandle& nh)
 	 : m_driver{driver}
-	 , m_nh{nh}
-	 , m_actionInterface{nh}
-	{
-		m_pub_info = m_nh.advertise<Info>("info", 1, true);
-		m_pub_status = m_nh.advertise<Status>("status", 5);
-	}
+	 , m_rosInterface{nh}
+	{}
+
+	/**
+	 * @brief Constructor
+	 *
+	 * @param driver Reference to an instance of your driver class
+	 **/
+	explicit FSM(DriverClass& driver)
+	 : m_driver{driver}
+	{}
 
 	/**
 	 * @brief Initialize the type system
@@ -470,7 +467,7 @@ public:
 			m_infoMsg.states.push_back(std::move(stateInfo));
 		});
 
-		m_pub_info.publish(m_infoMsg);
+		m_rosInterface.publishInfo(m_infoMsg);
 
 		// Setup factory functions
 		m_factories.clear();
@@ -521,16 +518,16 @@ public:
 			return;
 
 		// Handle change state requests
-		if(m_actionInterface.changeRequested())
+		if(m_rosInterface.changeRequested())
 		{
-			auto stateName = m_actionInterface.requestedState();
+			auto stateName = m_rosInterface.requestedState();
 			auto it = m_factories.find(stateName);
 			if(it != m_factories.end())
 			{
 				ROSFMT_INFO("ROS interface: requested state '{}'", stateName);
 				auto stateWithName = it->second();
 				switchState(std::move(stateWithName.first), stateWithName.second);
-				m_actionInterface.report(detail::ActionInterface::Result::Success);
+				m_rosInterface.report(detail::ROSInterface::Result::Success);
 			}
 			else
 			{
@@ -539,11 +536,11 @@ public:
 					"FSM::initialize<>()?",
 					stateName
 				);
-				m_actionInterface.report(detail::ActionInterface::Result::NoSuchState);
+				m_rosInterface.report(detail::ROSInterface::Result::NoSuchState);
 			}
 		}
 
-		m_history.back().end = ros::Time::now();
+		m_rosInterface.updateCurrentState();
 
 		Transition nextState = m_watchdog.call(m_stateLabel, "execute", [&](){
 			return m_state->doExecute();
@@ -618,50 +615,33 @@ private:
 			m_state->doEnter();
 		});
 
-		StateStatus stateStatus;
-		stateStatus.name = m_stateLabel;
-		stateStatus.start = stateStatus.end = ros::Time::now();
-		m_history.push_back(std::move(stateStatus));
+		m_rosInterface.pushStateHistory(m_stateLabel);
 	}
 
 	void sendROSStatus(const std::string& messages)
 	{
-		Status status;
-		status.current_state = m_stateLabel ? m_stateLabel : "<not running>";
-		status.display_messages = messages;
+		std::string driverInfo;
 
 		if constexpr(detail::hasToString<DriverClass>(0))
-		{
-			status.driver_info = m_driver.toString();
-		}
+			driverInfo = m_driver.toString();
 
-		status.paused = false;
-		status.history.reserve(m_history.size());
-		std::copy(m_history.begin(), m_history.end(),
-			std::back_inserter(status.history)
-		);
-
-		m_pub_status.publish(status);
+		m_rosInterface.publishStatus(m_stateLabel, driverInfo, messages);
 	}
 
 	DriverClass& m_driver;
 	std::unique_ptr<StateBase> m_state;
 	const char* m_stateLabel = nullptr;
 
-	ros::NodeHandle m_nh;
-	ros::Publisher m_pub_info;
-	ros::Publisher m_pub_status;
-
-	Info m_infoMsg;
-	boost::circular_buffer<StateStatus> m_history{100};
-
 	using StateWithName = std::pair<std::unique_ptr<StateBase>, const char*>;
 	using StateFactory = std::function<StateWithName()>;
 	std::map<std::string, StateFactory> m_factories;
 
+	Info m_infoMsg;
+
 	detail::Watchdog m_watchdog;
 
-	detail::ActionInterface m_actionInterface;
+	detail::ROSInterface m_rosInterface;
+
 };
 
 }
