@@ -18,6 +18,7 @@
 #include "detail/ros_interface.h"
 #include "detail/has_to_string.h"
 #include "detail/is_defined.h"
+#include "detail/pointer.h"
 #include "detail/format.h"
 #include "detail/watchdog.h"
 #include "introspection.h"
@@ -147,7 +148,7 @@ public:
 		 * Obtain the contained StateBase pointer. Caution: this throws if
 		 * there is no successor state (e.g. @ref State::stay).
 		 **/
-		operator std::unique_ptr<StateBase>() &&
+		operator detail::Pointer<StateBase>() &&
 		{
 			return std::move(std::get<1>(m_data));
 		}
@@ -163,17 +164,17 @@ public:
 			return m_data.index() != 0;
 		}
 
-		static Transition _unchecked(std::unique_ptr<StateBase>&& state, const std::string_view& label)
+		static Transition _unchecked(detail::Pointer<StateBase>&& state, const std::string_view& label)
 		{ return Transition(std::move(state), label); }
 
 		constexpr std::string_view label() const
 		{ return m_label; }
 	private:
-		explicit Transition(std::unique_ptr<StateBase>&& state, const std::string_view& label)
+		explicit Transition(detail::Pointer<StateBase>&& state, const std::string_view& label)
 		 : m_data{std::move(state)}, m_label{label}
 		{}
 
-		std::variant<Stay, std::unique_ptr<StateBase>> m_data;
+		std::variant<Stay, detail::Pointer<StateBase>> m_data;
 		std::string_view m_label;
 	};
 
@@ -281,7 +282,10 @@ public:
 			{
 				if constexpr (brigand::contains<typename TransitionSpec::Set, T>::value)
 				{
-					return Transition::_unchecked(std::make_unique<T>(std::forward<Args>(args)...), T::Name.c_str());
+					return Transition::_unchecked(
+						detail::Pointer<T>{detail::InPlaceInit, std::forward<Args>(args)...},
+						std::string_view{T::Name}
+					);
 				}
 				else
 				{
@@ -479,8 +483,8 @@ public:
 			{
 				m_factories.emplace(State::Name.c_str(), [](){
 					return StateWithName{
-						std::make_unique<State>(),
-						State::Name.c_str()
+						detail::Pointer<State>{detail::InPlaceInit},
+						std::string_view{State::Name}
 					};
 				});
 			}
@@ -499,7 +503,7 @@ public:
 	void setState(Args && ... args)
 	{
 		switchState(
-			std::make_unique<State>(std::forward<Args>(args)...),
+			detail::Pointer<State>{detail::InPlaceInit, std::forward<Args>(args)...},
 			State::Name.c_str()
 		);
 	}
@@ -597,7 +601,7 @@ public:
 	}
 
 private:
-	void switchState(std::unique_ptr<StateBase>&& state, const std::string_view& label)
+	void switchState(detail::Pointer<StateBase>&& state, const std::string_view& label)
 	{
 		if(m_state)
 		{
@@ -631,10 +635,10 @@ private:
 	}
 
 	DriverClass& m_driver;
-	std::unique_ptr<StateBase> m_state;
+	detail::Pointer<StateBase> m_state;
 	std::string_view m_stateLabel = nullptr;
 
-	using StateWithName = std::pair<std::unique_ptr<StateBase>, std::string_view>;
+	using StateWithName = std::pair<detail::Pointer<StateBase>, std::string_view>;
 	using StateFactory = std::function<StateWithName()>;
 	std::map<std::string, StateFactory> m_factories;
 

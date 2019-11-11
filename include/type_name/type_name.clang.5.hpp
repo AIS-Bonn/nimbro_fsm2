@@ -62,6 +62,11 @@ public:
 	{
 		return std::string_view{buf, Size};
 	}
+
+	constexpr operator std::string_view() const noexcept
+	{
+		return view();
+	}
 private:
 	char buf[Size+1];
 };
