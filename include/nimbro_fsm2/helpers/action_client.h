@@ -4,6 +4,7 @@
 #ifndef NIMBRO_FSM2_HELPERS_ACTION_CLIENT_H
 #define NIMBRO_FSM2_HELPERS_ACTION_CLIENT_H
 
+#include <ros/console.h>
 #include <actionlib/action_definition.h>
 #include <actionlib/client/simple_client_goal_state.h>
 
