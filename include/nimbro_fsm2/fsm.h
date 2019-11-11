@@ -442,21 +442,9 @@ public:
 		// of all states
 		using ReachableStates [[maybe_unused]] = typename detail::toCollector<StateList>::type;
 
-		ROS_INFO("Finite State Machine with states:");
-		brigand::for_each<StateList>([](auto state){
-			using State = typename decltype(state)::type;
-			std::stringstream ss;
-			ss << fmt::format(" - {} trans [", State::Name.c_str());
-
-			brigand::for_each<typename State::Transitions::Set>([&](auto successorState) {
-				using SuccessorState = typename decltype(successorState)::type;
-				ss << fmt::format(" {},", SuccessorState::Name.c_str());
-			});
-			ROS_INFO_STREAM(ss.str());
-		});
-
 		// Send out & latch Info message
 		m_infoMsg.states.clear();
+		m_factories.clear();
 
 		brigand::for_each<StateList>([&](auto state){
 			using State = typename decltype(state)::type;
@@ -471,14 +459,7 @@ public:
 			});
 
 			m_infoMsg.states.push_back(std::move(stateInfo));
-		});
 
-		m_rosInterface.publishInfo(m_infoMsg);
-
-		// Setup factory functions
-		m_factories.clear();
-		brigand::for_each<StateList>([&](auto state){
-			using State = typename decltype(state)::type;
 			if constexpr (std::is_constructible_v<State>)
 			{
 				m_factories.emplace(State::Name.c_str(), [](){
@@ -489,6 +470,25 @@ public:
 				});
 			}
 		});
+
+		m_rosInterface.publishInfo(m_infoMsg);
+
+		// Log
+		{
+			std::stringstream ss;
+			ss << "Finite State Machine with states:\n";
+			for(const auto& stateInfo : m_infoMsg.states)
+			{
+				ss << fmt::format(" - {} trans [", stateInfo.name);
+
+				for(const auto& transition : stateInfo.successors)
+				{
+					ss << " " << transition << ",";
+				}
+				ss << "]\n";
+			}
+			ROS_INFO_STREAM(ss.str());
+		}
 	}
 
 	/**
