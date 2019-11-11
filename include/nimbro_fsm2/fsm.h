@@ -7,9 +7,7 @@
 #include <memory>
 #include <variant>
 
-#include <boost/hana/tuple.hpp>
-#include <boost/hana/set.hpp>
-#include <boost/hana/for_each.hpp>
+#include <brigand/brigand.h>
 
 #include <ros/time.h>
 
@@ -45,6 +43,13 @@ namespace detail
 	class Collector
 	{
 	};
+
+	template<class... T>
+	struct toCollector {};
+
+	template<class... T>
+	struct toCollector<brigand::detail::set_impl<T...>>
+	{ using type = Collector<T...>; };
 }
 
 /**
@@ -117,9 +122,9 @@ public:
 		/**
 		 * @brief Set of possible successor states
 		 *
-		 * This is a boost::hana set of all the possible successor states.
+		 * This is a brigand::set of all the possible successor states.
 		 **/
-		static constexpr auto SuccessorStateSet = boost::hana::to_set(boost::hana::tuple_t<SuccessorStates...>);
+		using Set = brigand::set<SuccessorStates...>;
 	};
 
 	/**
@@ -270,17 +275,15 @@ public:
 		template<class T, class ... Args>
 		Transition transit(Args&&... args)
 		{
-			namespace hana = boost::hana;
-
 			if constexpr (detail::is_defined_v<T>)
 			{
-				if constexpr (hana::contains(TransitionSpec::SuccessorStateSet, hana::type_c<T>))
+				if constexpr (brigand::contains<typename TransitionSpec::Set, T>::value)
 				{
 					return Transition::_unchecked(std::make_unique<T>(std::forward<Args>(args)...), T::Name.c_str());
 				}
 				else
 				{
-					static_assert(hana::contains(TransitionSpec::SuccessorStateSet, hana::type_c<T>),
+					static_assert(brigand::contains<typename TransitionSpec::Set, T>::value,
 						"You tried to transit to a state not mentioned in your TransitionSpec"
 					);
 				}
@@ -427,22 +430,19 @@ public:
 	template<class ... StartStates>
 	void initialize()
 	{
-		namespace hana = boost::hana;
-
-		auto stateList = reachableStates<StartStates...>();
+		using StateList = ReachableStates<StartStates...>;
 
 		// This is read out and checked by the clang plugin against the list
 		// of all states
-		using ReachableStates [[maybe_unused]] = typename decltype(hana::unpack(stateList, hana::template_<detail::Collector>))::type;
+		using ReachableStates [[maybe_unused]] = typename detail::toCollector<StateList>::type;
 
 		ROS_INFO("Finite State Machine with states:");
-		boost::hana::for_each(stateList, [](auto state){
+		brigand::for_each<StateList>([](auto state){
 			using State = typename decltype(state)::type;
 			std::stringstream ss;
 			ss << fmt::format(" - {} trans [", State::Name.c_str());
 
-			auto successorStates = State::Transitions::SuccessorStateSet;
-			boost::hana::for_each(successorStates, [&](auto successorState) {
+			brigand::for_each<typename State::Transitions::Set>([&](auto successorState) {
 				using SuccessorState = typename decltype(successorState)::type;
 				ss << fmt::format(" {},", SuccessorState::Name.c_str());
 			});
@@ -452,13 +452,13 @@ public:
 		// Send out & latch Info message
 		m_infoMsg.states.clear();
 
-		hana::for_each(stateList, [&](auto state){
+		brigand::for_each<StateList>([&](auto state){
 			using State = typename decltype(state)::type;
 
 			StateInfo stateInfo;
 			stateInfo.name = State::Name.c_str();
 
-			hana::for_each(State::Transitions::SuccessorStateSet, [&](auto suc){
+			brigand::for_each<typename State::Transitions::Set>([&](auto suc){
 				using Suc = typename decltype(suc)::type;
 
 				stateInfo.successors.emplace_back(Suc::Name.c_str());
@@ -471,7 +471,7 @@ public:
 
 		// Setup factory functions
 		m_factories.clear();
-		boost::hana::for_each(stateList, [this](auto state){
+		brigand::for_each<StateList>([&](auto state){
 			using State = typename decltype(state)::type;
 			if constexpr (std::is_constructible_v<State>)
 			{

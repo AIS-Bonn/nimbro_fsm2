@@ -4,48 +4,65 @@
 #ifndef NIMBRO_FSM2_INTROSPECTION_H
 #define NIMBRO_FSM2_INTROSPECTION_H
 
-#include <boost/hana/type.hpp>
-#include <boost/hana/set.hpp>
-#include <boost/hana/tuple.hpp>
-#include <boost/hana/functional/fix.hpp>
-#include <boost/hana/fold.hpp>
-#include <boost/hana/difference.hpp>
-#include <boost/hana/union.hpp>
+#include <brigand/brigand.h>
 
 #include "detail/is_defined.h"
 
 namespace nimbro_fsm2
 {
 
-template<class ... StartStates>
-constexpr auto reachableStates()
+namespace detail
 {
-	namespace hana = boost::hana;
+	template <bool>
+	struct conditional;
 
-	auto startStates = hana::tuple_t<StartStates...>;
-	auto startSet = hana::to_set(startStates);
+	template <>
+	struct conditional<true> {
+		template <typename A, typename B>
+		using f = typename A::type;
+	};
 
-	auto visitor = hana::fix([](auto self, const auto& visited, auto x) {
-		// Find out which of the successor states we have not visited so far
-		using State = typename decltype(x)::type;
+	template <>
+	struct conditional<false> {
+		template <typename A, typename B>
+		using f = typename B::type;
+	};
+
+	template<typename CurrentSet, typename State>
+	struct Fold;
+
+	template<typename CurrentSet, typename State>
+	struct Recurse
+	{
+		using type = typename brigand::fold<typename State::Transitions::Set,
+			brigand::insert<CurrentSet, State>,
+			Fold<brigand::_state, brigand::_element>
+		>;
+	};
+
+	template<typename CurrentSet, typename State>
+	struct Fold
+	{
 		static_assert(detail::is_defined<State>::value,
 			"For introspection, you need to include *all* state headers! "
 			"See below for the state class that you need to include."
 		);
 
-		auto successorStates = State::Transitions::SuccessorStateSet;
-		auto newStates = hana::difference(successorStates, visited);
+		using alreadyKnown = brigand::contains<CurrentSet, State>;
 
-		// Make them visited
-		auto includingNewStates = hana::union_(successorStates, visited);
-
-		return hana::fold(newStates, includingNewStates, self);
-	});
-
-	auto state_set = hana::fold(startSet, startSet, visitor);
-
-	return hana::to_tuple(state_set);
+		using type = typename conditional<alreadyKnown::value>::template f<
+			brigand::type_<CurrentSet>,
+			Recurse<CurrentSet, State>
+		>;
+	};
 }
+
+template<typename ... StartStates>
+using ReachableStates = brigand::fold<
+	brigand::set<StartStates...>,
+	brigand::set<>,
+	detail::Fold<brigand::_state, brigand::_element>
+>;
 
 }
 
