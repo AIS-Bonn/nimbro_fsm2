@@ -39,6 +39,7 @@ public:
 
 Q_SIGNALS:
 	void statusReceived(const nimbro_fsm2::StatusConstPtr& msg);
+	void infoReceived(const nimbro_fsm2::InfoConstPtr& msg);
 	void actionClientFinished();
 
 private Q_SLOTS:
@@ -50,8 +51,8 @@ private Q_SLOTS:
 	void checkActionClient();
 
 	void processStatus(const nimbro_fsm2::StatusConstPtr& msg);
-private:
 	void handleInfo(const nimbro_fsm2::InfoConstPtr& msg);
+private:
 
 	QWidget* m_w;
 	Ui_StateMachineGUI* m_ui;

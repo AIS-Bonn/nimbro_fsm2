@@ -16,6 +16,7 @@
 #include "ui_statemachine_gui.h"
 
 Q_DECLARE_METATYPE(nimbro_fsm2::StatusConstPtr);
+Q_DECLARE_METATYPE(nimbro_fsm2::InfoConstPtr);
 
 namespace nimbro_fsm2
 {
@@ -28,6 +29,12 @@ StateMachineGUI::StateMachineGUI()
 	QObject::connect(
 		this, SIGNAL(statusReceived(nimbro_fsm2::StatusConstPtr)),
 		SLOT(processStatus(nimbro_fsm2::StatusConstPtr)),
+		Qt::QueuedConnection
+	);
+	qRegisterMetaType<nimbro_fsm2::InfoConstPtr>();
+	QObject::connect(
+		this, SIGNAL(infoReceived(nimbro_fsm2::InfoConstPtr)),
+		SLOT(handleInfo(nimbro_fsm2::InfoConstPtr)),
 		Qt::QueuedConnection
 	);
 }
@@ -147,7 +154,7 @@ void StateMachineGUI::subscribe()
 	m_prefix = prefix;
 
 	m_sub_status = nh.subscribe(prefix + "/status", 1, &StateMachineGUI::statusReceived, this);
-	m_sub_info = nh.subscribe(prefix + "/info", 1, &StateMachineGUI::handleInfo, this);
+	m_sub_info = nh.subscribe(prefix + "/info", 1, &StateMachineGUI::infoReceived, this);
 
 	m_ac.reset(new actionlib::SimpleActionClient<nimbro_fsm2::ChangeStateAction>(
 		nh, prefix + "/change_state", false)
