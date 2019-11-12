@@ -462,7 +462,7 @@ public:
 
 			if constexpr (std::is_constructible_v<State>)
 			{
-				m_factories.emplace(State::Name.c_str(), [](){
+				m_factories.emplace(std::string_view{State::Name}, [](){
 					return StateWithName{
 						detail::Pointer<State>{detail::InPlaceInit},
 						std::string_view{State::Name}

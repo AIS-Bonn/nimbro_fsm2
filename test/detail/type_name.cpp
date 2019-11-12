@@ -17,6 +17,8 @@ namespace type_name_test
 	class Probe;
 }
 
+class Probe2;
+
 TEST_CASE("type_name")
 {
 	constexpr auto Name = type_name::type_name_v<type_name_test::states::TestA>;
@@ -29,4 +31,9 @@ TEST_CASE("type_name")
 		type_name_test::states::TestA, type_name_test::Probe
 	>;
 	static_assert(relative == "states::TestA");
+
+	constexpr auto relative2 = type_name::relative_name_v<
+		type_name_test::states::TestA, Probe2
+	>;
+	static_assert(relative2 == "type_name_test::states::TestA");
 }

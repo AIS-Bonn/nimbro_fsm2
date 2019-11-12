@@ -67,6 +67,11 @@ public:
 	{
 		return view();
 	}
+
+	constexpr bool empty() const noexcept
+	{
+		return Size == 0;
+	}
 private:
 	char buf[Size+1];
 };

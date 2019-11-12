@@ -51,10 +51,10 @@ private:
 		constexpr auto prefix = NamespaceOf<Probe>::value;
 
 #if defined(__clang__)
-		if constexpr(fullName.template substr<0, prefix.size()>() == prefix)
+		if constexpr(!prefix.empty() && fullName.template substr<0, prefix.size()>() == prefix)
 			return fullName.template substr<prefix.size() + 2, fullName.size() - prefix.size() - 2>();
 #else
-		if(fullName.substr(0, prefix.size()) == prefix)
+		if(!prefix.empty() && fullName.substr(0, prefix.size()) == prefix)
 			return fullName.substr(prefix.size() + 2);
 #endif
 		else
