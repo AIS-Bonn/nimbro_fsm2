@@ -23,16 +23,18 @@ public:
 	using Client = actionlib::SimpleActionClient<ActionSpec>;
 
 	explicit Private(const std::string& topic)
-	 : topic{topic}
-	 , ac{topic, false}
-	{}
+	 : ac{topic, false}
+	{
+		topicVis = fmt::format("{} (resolved to {})", topic, ros::names::resolve(topic));
+	}
 
 	explicit Private(ros::NodeHandle& nh, const std::string& topic)
-	 : topic{topic}
-	 , ac{nh, topic, false}
-	{}
+	 : ac{nh, topic, false}
+	{
+		topicVis = fmt::format("{} (resolved to {})", topic, nh.resolveName(topic));
+	}
 
-	std::string topic;
+	std::string topicVis;
 	Client ac;
 
 	ActionState state{ActionState::Connecting};
@@ -61,7 +63,7 @@ ActionClient<Action>::~ActionClient()
 {
 	if(m_d->state == ActionState::InProcess)
 	{
-		ROSFMT_WARN("Canceling active goal on action topic {}", m_d->topic);
+		ROSFMT_WARN("Canceling active goal on action topic {}", m_d->topicVis);
 		m_d->ac.cancelGoal();
 	}
 }
@@ -101,7 +103,7 @@ ActionState ActionClient<Action>::step()
 			{
 				ROSFMT_ERROR("Could not connect to action server on topic {}. "
 					"Reporting action failure.",
-					m_d->topic
+					m_d->topicVis
 				);
 				m_d->state = ActionState::Failed;
 			}
@@ -129,7 +131,7 @@ ActionState ActionClient<Action>::step()
 		{
 			if(!m_d->ac.isServerConnected())
 			{
-				ROSFMT_ERROR("Lost connection to action server {}", m_d->topic);
+				ROSFMT_ERROR("Lost connection to action server {}", m_d->topicVis);
 				m_d->ac.cancelGoal();
 				m_d->state = ActionState::Failed;
 				break;
@@ -143,7 +145,7 @@ ActionState ActionClient<Action>::step()
 				else
 				{
 					ROSFMT_WARN("Action {} failed with terminal state {}: {}",
-						m_d->topic, acState.toString(), acState.getText()
+						m_d->topicVis, acState.toString(), acState.getText()
 					);
 					m_d->state = ActionState::Failed;
 				}
