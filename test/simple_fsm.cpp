@@ -73,6 +73,8 @@ TEST_CASE("simple FSM")
 		auto info = fsm.stateInfo();
 		CHECK(info.states.size() == 2);
 
+		CAPTURE(info.states);
+
 		auto infoA = std::find_if(info.states.begin(), info.states.end(), [](const auto& info){
 			return info.name == "StateA";
 		});

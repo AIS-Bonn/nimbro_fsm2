@@ -7,9 +7,8 @@
 #include <memory>
 #include <variant>
 
-#include <boost/hana/tuple.hpp>
-#include <boost/hana/set.hpp>
-#include <boost/hana/for_each.hpp>
+#include <brigand/brigand.h>
+#include <type_name/type_name.hpp>
 
 #include <ros/time.h>
 
@@ -18,8 +17,8 @@
 
 #include "detail/ros_interface.h"
 #include "detail/has_to_string.h"
-#include "detail/type_name.h"
 #include "detail/is_defined.h"
+#include "detail/pointer.h"
 #include "detail/format.h"
 #include "detail/watchdog.h"
 #include "introspection.h"
@@ -45,6 +44,13 @@ namespace detail
 	class Collector
 	{
 	};
+
+	template<class... T>
+	struct toCollector {};
+
+	template<class... T>
+	struct toCollector<brigand::detail::set_impl<T...>>
+	{ using type = Collector<T...>; };
 }
 
 /**
@@ -66,7 +72,7 @@ template<class DriverClass>
 class FSM
 {
 public:
-	static constexpr auto Namespace = detail::namespace_of(detail::type_name<DriverClass>());
+	static constexpr auto Namespace = type_name::namespace_of_v<DriverClass>;
 
 	class Transition;
 
@@ -117,9 +123,9 @@ public:
 		/**
 		 * @brief Set of possible successor states
 		 *
-		 * This is a boost::hana set of all the possible successor states.
+		 * This is a brigand::set of all the possible successor states.
 		 **/
-		static constexpr auto SuccessorStateSet = boost::hana::to_set(boost::hana::tuple_t<SuccessorStates...>);
+		using Set = brigand::set<SuccessorStates...>;
 	};
 
 	/**
@@ -142,7 +148,7 @@ public:
 		 * Obtain the contained StateBase pointer. Caution: this throws if
 		 * there is no successor state (e.g. @ref State::stay).
 		 **/
-		operator std::unique_ptr<StateBase>() &&
+		operator detail::Pointer<StateBase>() &&
 		{
 			return std::move(std::get<1>(m_data));
 		}
@@ -158,18 +164,18 @@ public:
 			return m_data.index() != 0;
 		}
 
-		static Transition _unchecked(std::unique_ptr<StateBase>&& state, const char* label)
+		static Transition _unchecked(detail::Pointer<StateBase>&& state, const std::string_view& label)
 		{ return Transition(std::move(state), label); }
 
-		constexpr const char* label() const
+		constexpr std::string_view label() const
 		{ return m_label; }
 	private:
-		explicit Transition(std::unique_ptr<StateBase>&& state, const char* label)
+		explicit Transition(detail::Pointer<StateBase>&& state, const std::string_view& label)
 		 : m_data{std::move(state)}, m_label{label}
 		{}
 
-		std::variant<Stay, std::unique_ptr<StateBase>> m_data;
-		const char* m_label;
+		std::variant<Stay, detail::Pointer<StateBase>> m_data;
+		std::string_view m_label;
 	};
 
 	/**
@@ -204,13 +210,15 @@ public:
 		/**
 		 * @brief State name
 		 *
-		 * This state name is extracted at compile time and stored as a
-		 * @p boost::hana::string. You can use `.c_str()` to get a runtime
-		 * string:
+		 * This state name is extracted at compile time and stored either as
+		 * @p std::string_view (GCC) or a custom static string type (clang).
+		 * You can use `.c_str()` to get a runtime string.
 		 *
 		 * @snippet demo.cpp StateName
 		 **/
-		static constexpr auto Name = detail::relative_name<Derived>(Namespace);
+		static constexpr auto Name = type_name::relative_name_v<
+			Derived, DriverClass
+		>;
 
 		/**
 		 * @brief Elapsed time
@@ -270,17 +278,18 @@ public:
 		template<class T, class ... Args>
 		Transition transit(Args&&... args)
 		{
-			namespace hana = boost::hana;
-
 			if constexpr (detail::is_defined_v<T>)
 			{
-				if constexpr (hana::contains(TransitionSpec::SuccessorStateSet, hana::type_c<T>))
+				if constexpr (brigand::contains<typename TransitionSpec::Set, T>::value)
 				{
-					return Transition::_unchecked(std::make_unique<T>(std::forward<Args>(args)...), T::Name.c_str());
+					return Transition::_unchecked(
+						detail::Pointer<T>{detail::InPlaceInit, std::forward<Args>(args)...},
+						std::string_view{T::Name}
+					);
 				}
 				else
 				{
-					static_assert(hana::contains(TransitionSpec::SuccessorStateSet, hana::type_c<T>),
+					static_assert(brigand::contains<typename TransitionSpec::Set, T>::value,
 						"You tried to transit to a state not mentioned in your TransitionSpec"
 					);
 				}
@@ -427,62 +436,59 @@ public:
 	template<class ... StartStates>
 	void initialize()
 	{
-		namespace hana = boost::hana;
-
-		auto stateList = reachableStates<StartStates...>();
+		using StateList = ReachableStates<StartStates...>;
 
 		// This is read out and checked by the clang plugin against the list
 		// of all states
-		using ReachableStates [[maybe_unused]] = typename decltype(hana::unpack(stateList, hana::template_<detail::Collector>))::type;
-
-		ROS_INFO("Finite State Machine with states:");
-		boost::hana::for_each(stateList, [](auto state){
-			using State = typename decltype(state)::type;
-			std::stringstream ss;
-			ss << fmt::format(" - {} trans [", State::Name.c_str());
-
-			auto successorStates = State::Transitions::SuccessorStateSet;
-			boost::hana::for_each(successorStates, [&](auto successorState) {
-				using SuccessorState = typename decltype(successorState)::type;
-				ss << fmt::format(" {},", SuccessorState::Name.c_str());
-			});
-			ROS_INFO_STREAM(ss.str());
-		});
+		using ReachableStates [[maybe_unused]] = typename detail::toCollector<StateList>::type;
 
 		// Send out & latch Info message
 		m_infoMsg.states.clear();
+		m_factories.clear();
 
-		hana::for_each(stateList, [&](auto state){
+		brigand::for_each<StateList>([&](auto state){
 			using State = typename decltype(state)::type;
 
 			StateInfo stateInfo;
 			stateInfo.name = State::Name.c_str();
 
-			hana::for_each(State::Transitions::SuccessorStateSet, [&](auto suc){
+			brigand::for_each<typename State::Transitions::Set>([&](auto suc){
 				using Suc = typename decltype(suc)::type;
 
 				stateInfo.successors.emplace_back(Suc::Name.c_str());
 			});
 
 			m_infoMsg.states.push_back(std::move(stateInfo));
-		});
 
-		m_rosInterface.publishInfo(m_infoMsg);
-
-		// Setup factory functions
-		m_factories.clear();
-		boost::hana::for_each(stateList, [this](auto state){
-			using State = typename decltype(state)::type;
 			if constexpr (std::is_constructible_v<State>)
 			{
-				m_factories.emplace(State::Name.c_str(), [](){
+				m_factories.emplace(std::string_view{State::Name}, [](){
 					return StateWithName{
-						std::make_unique<State>(),
-						State::Name.c_str()
+						detail::Pointer<State>{detail::InPlaceInit},
+						std::string_view{State::Name}
 					};
 				});
 			}
 		});
+
+		m_rosInterface.publishInfo(m_infoMsg);
+
+		// Log
+		{
+			std::stringstream ss;
+			ss << "Finite State Machine with states:\n";
+			for(const auto& stateInfo : m_infoMsg.states)
+			{
+				ss << fmt::format(" - {} trans [", stateInfo.name);
+
+				for(const auto& transition : stateInfo.successors)
+				{
+					ss << " " << transition << ",";
+				}
+				ss << "]\n";
+			}
+			ROS_INFO_STREAM(ss.str());
+		}
 	}
 
 	/**
@@ -497,7 +503,7 @@ public:
 	void setState(Args && ... args)
 	{
 		switchState(
-			std::make_unique<State>(std::forward<Args>(args)...),
+			detail::Pointer<State>{detail::InPlaceInit, std::forward<Args>(args)...},
 			State::Name.c_str()
 		);
 	}
@@ -561,7 +567,7 @@ public:
 				ROSFMT_INFO("{}", messages);
 			}
 
-			const char* label = nextState.label();
+			auto label = nextState.label();
 			switchState(std::move(nextState), label);
 		}
 	}
@@ -574,8 +580,8 @@ public:
 	 **/
 	[[nodiscard]] std::string currentStateName() const
 	{
-		if(m_stateLabel)
-			return m_stateLabel;
+		if(!m_stateLabel.empty())
+			return std::string{m_stateLabel};
 		else
 			return {};
 	}
@@ -595,7 +601,7 @@ public:
 	}
 
 private:
-	void switchState(std::unique_ptr<StateBase>&& state, const char* label)
+	void switchState(detail::Pointer<StateBase>&& state, const std::string_view& label)
 	{
 		if(m_state)
 		{
@@ -615,7 +621,7 @@ private:
 			m_state->doEnter();
 		});
 
-		m_rosInterface.pushStateHistory(m_stateLabel);
+		m_rosInterface.pushStateHistory(std::string{m_stateLabel});
 	}
 
 	void sendROSStatus(const std::string& messages)
@@ -625,14 +631,14 @@ private:
 		if constexpr(detail::hasToString<DriverClass>(0))
 			driverInfo = m_driver.toString();
 
-		m_rosInterface.publishStatus(m_stateLabel, driverInfo, messages);
+		m_rosInterface.publishStatus(std::string{m_stateLabel}, driverInfo, messages);
 	}
 
 	DriverClass& m_driver;
-	std::unique_ptr<StateBase> m_state;
-	const char* m_stateLabel = nullptr;
+	detail::Pointer<StateBase> m_state;
+	std::string_view m_stateLabel = nullptr;
 
-	using StateWithName = std::pair<std::unique_ptr<StateBase>, const char*>;
+	using StateWithName = std::pair<detail::Pointer<StateBase>, std::string_view>;
 	using StateFactory = std::function<StateWithName()>;
 	std::map<std::string, StateFactory> m_factories;
 

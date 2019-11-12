@@ -29,7 +29,7 @@ Watchdog::~Watchdog()
 	m_thread.join();
 }
 
-Watchdog::Scope::Scope(Watchdog& wd, const std::string& className, const std::string& methodName)
+Watchdog::Scope::Scope(Watchdog& wd, const std::string_view& className, const std::string& methodName)
  : m_wd(wd)
 {
 	m_wd.enter(className, methodName);
@@ -40,7 +40,7 @@ Watchdog::Scope::~Scope()
 	m_wd.leave();
 }
 
-void Watchdog::enter(const std::string& className, const std::string& methodName)
+void Watchdog::enter(const std::string_view& className, const std::string& methodName)
 {
 	std::unique_lock<std::mutex> lock(m_mutex);
 	m_startTime = ros::Time::now();

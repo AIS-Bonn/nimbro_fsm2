@@ -11,7 +11,7 @@ namespace nimbro_fsm2
 namespace detail
 {
 
-using Buffer = fmt::internal::basic_buffer<char>;
+using Buffer = fmt::memory_buffer;
 
 /**
  * @brief Format into buffer and append newline

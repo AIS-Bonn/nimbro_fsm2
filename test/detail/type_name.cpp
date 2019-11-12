@@ -3,52 +3,37 @@
 
 #include <catch_ros/catch.hpp>
 
-#include <nimbro_fsm2/detail/type_name.h>
-
-#include <boost/hana/assert.hpp>
-#include <boost/hana/equal.hpp>
+#include <type_name/type_name.hpp>
 
 namespace type_name_test
 {
-
-	class TestA
+	namespace states
 	{
-	};
+		class TestA
+		{
+		};
+	}
 
+	class Probe;
 }
+
+class Probe2;
 
 TEST_CASE("type_name")
 {
-	BOOST_HANA_CONSTANT_CHECK(
-		nimbro_fsm2::detail::type_name<type_name_test::TestA>() == BOOST_HANA_STRING("type_name_test::TestA")
-	);
+	constexpr auto Name = type_name::type_name_v<type_name_test::states::TestA>;
+	static_assert(Name == "type_name_test::states::TestA");
 
-	constexpr auto Name = nimbro_fsm2::detail::type_name<type_name_test::TestA>();
-	BOOST_HANA_CONSTANT_CHECK(
-		Name == BOOST_HANA_STRING("type_name_test::TestA")
-	);
+	constexpr auto ns = type_name::namespace_of_v<type_name_test::states::TestA>;
+	static_assert(ns == "type_name_test::states");
 
-	BOOST_HANA_CONSTANT_CHECK(
-		nimbro_fsm2::detail::namespace_of(Name) == BOOST_HANA_STRING("type_name_test")
-	);
-	REQUIRE(std::string(nimbro_fsm2::detail::namespace_of(Name).c_str()) == "type_name_test");
-	REQUIRE(std::string(Name.c_str()) == "type_name_test::TestA");
+	constexpr auto relative = type_name::relative_name_v<
+		type_name_test::states::TestA, type_name_test::Probe
+	>;
+	static_assert(relative == "states::TestA");
 
-	constexpr auto Str1 = BOOST_HANA_STRING("type_name_test::TestA");
-	constexpr auto Str2 = BOOST_HANA_STRING("type_name_test");
-
-	static_assert(nimbro_fsm2::detail::is_prefix(Str2, Str1));
-	REQUIRE(nimbro_fsm2::detail::is_prefix(Str2, Str1));
-	REQUIRE(!nimbro_fsm2::detail::is_prefix(BOOST_HANA_STRING("ABCDE"), BOOST_HANA_STRING("ABCXYZGA")));
-
-	BOOST_HANA_CONSTANT_CHECK(
-		nimbro_fsm2::detail::relative_name_string(Str1, Str2)
-		==
-		BOOST_HANA_STRING("TestA")
-	);
-	REQUIRE(
-		std::string(nimbro_fsm2::detail::relative_name_string(Str1, Str2).c_str())
-		==
-		"TestA"
-	);
+	constexpr auto relative2 = type_name::relative_name_v<
+		type_name_test::states::TestA, Probe2
+	>;
+	static_assert(relative2 == "type_name_test::states::TestA");
 }
