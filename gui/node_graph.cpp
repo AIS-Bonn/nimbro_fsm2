@@ -499,7 +499,7 @@ void NodeGraph::generateGraph()
     }
     ss << "}\n";
 
-	std::cout << ss.str() << std::endl;
+// 	std::cout << ss.str() << std::endl;
 
     //Run dot
     char dotOut[dotOutSize];
