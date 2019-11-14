@@ -55,8 +55,8 @@
 #include <cassert>
 #endif
 
-#ifndef Corrade_Containers_Tags_h
-#define Corrade_Containers_Tags_h
+#ifndef nimbro_fsm2_Containers_Tags_h
+#define nimbro_fsm2_Containers_Tags_h
 
 namespace nimbro_fsm2 { namespace detail {
 
@@ -112,8 +112,8 @@ constexpr InPlaceInitT InPlaceInit{InPlaceInitT::Init{}};
 #define CORRADE_ASSERT(condition, message, returnValue) assert(condition)
 #endif
 #endif
-#ifndef Corrade_Containers_Pointer_h
-#define Corrade_Containers_Pointer_h
+#ifndef nimbro_fsm2_Containers_Pointer_h
+#define nimbro_fsm2_Containers_Pointer_h
 
 namespace nimbro_fsm2 { namespace detail {
 
@@ -240,8 +240,8 @@ template<class T, class ...Args> inline Pointer<T> pointer(Args&&... args) {
 #endif
 #ifdef CORRADE_POINTER_STL_COMPATIBILITY
 #include <memory>
-#ifndef Corrade_Containers_PointerStl_h
-#define Corrade_Containers_PointerStl_h
+#ifndef nimbro_fsm2_Containers_PointerStl_h
+#define nimbro_fsm2_Containers_PointerStl_h
 
 namespace nimbro_fsm2 { namespace detail { namespace Implementation {
 
