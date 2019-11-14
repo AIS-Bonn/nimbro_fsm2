@@ -18,6 +18,7 @@
 #include "detail/ros_interface.h"
 #include "detail/has_to_string.h"
 #include "detail/is_defined.h"
+#include "detail/info_initializer.h"
 #include "detail/pointer.h"
 #include "detail/format.h"
 #include "detail/watchdog.h"
@@ -437,6 +438,7 @@ public:
 	void initialize()
 	{
 		using StateList = ReachableStates<StartStates...>;
+		using Constructible = ConstructibleStates<StateList>;
 
 		// This is read out and checked by the clang plugin against the list
 		// of all states
@@ -446,30 +448,10 @@ public:
 		m_infoMsg.states.clear();
 		m_factories.clear();
 
-		brigand::for_each<StateList>([&](auto state){
-			using State = typename decltype(state)::type;
+		m_infoMsg.states = std::move(detail::InfoInitializer<StateList>{}.states);
 
-			StateInfo stateInfo;
-			stateInfo.name = State::Name.c_str();
-
-			brigand::for_each<typename State::Transitions::Set>([&](auto suc){
-				using Suc = typename decltype(suc)::type;
-
-				stateInfo.successors.emplace_back(Suc::Name.c_str());
-			});
-
-			m_infoMsg.states.push_back(std::move(stateInfo));
-
-			if constexpr (std::is_constructible_v<State>)
-			{
-				m_factories.emplace(std::string_view{State::Name}, [](){
-					return StateWithName{
-						detail::Pointer<State>{detail::InPlaceInit},
-						std::string_view{State::Name}
-					};
-				});
-			}
-		});
+		// Create factories for states with a default constructor
+		m_factories = std::move(StateFactoryInitializer<Constructible>{}.stateFactories);
 
 		m_rosInterface.publishInfo(m_infoMsg);
 
@@ -479,7 +461,7 @@ public:
 			ss << "Finite State Machine with states:\n";
 			for(const auto& stateInfo : m_infoMsg.states)
 			{
-				ss << fmt::format(" - {} trans [", stateInfo.name);
+				ss << " - " << stateInfo.name << " trans [";
 
 				for(const auto& transition : stateInfo.successors)
 				{
@@ -634,12 +616,27 @@ private:
 		m_rosInterface.publishStatus(std::string{m_stateLabel}, driverInfo, messages);
 	}
 
+	using StateWithName = std::pair<detail::Pointer<StateBase>, std::string_view>;
+	using StateFactory = std::function<StateWithName()>;
+
+	template<class States>
+	using ConstructibleStates = brigand::filter<States, std::is_constructible<brigand::_1>>;
+
+	template<class... T>
+	struct StateFactoryInitializer;
+
+	template<class... T>
+	struct StateFactoryInitializer<brigand::detail::set_impl<T...>>
+	{
+		std::map<std::string, StateFactory> stateFactories{{
+			{std::string{std::string_view{T::Name}}, [](){ return StateWithName{detail::Pointer<StateBase>{new T}, T::Name}; }}...
+		}};
+	};
+
 	DriverClass& m_driver;
 	detail::Pointer<StateBase> m_state;
 	std::string_view m_stateLabel = nullptr;
 
-	using StateWithName = std::pair<detail::Pointer<StateBase>, std::string_view>;
-	using StateFactory = std::function<StateWithName()>;
 	std::map<std::string, StateFactory> m_factories;
 
 	Info m_infoMsg;

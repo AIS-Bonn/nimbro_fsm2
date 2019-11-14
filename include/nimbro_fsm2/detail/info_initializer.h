@@ -20,14 +20,14 @@ template<class... T>
 struct SuccessorInitializer<brigand::detail::set_impl<T...>>
 {
 	std::vector<std::string> successors{
-		std::string_view{T::Name}...
+		std::string{std::string_view{T::Name}}...
 	};
 };
 
 template<class... T>
 struct InfoInitializer {};
 
-StateInfo createInfo(const std::string_view& name, std::vector<std::string>&& successors)
+inline StateInfo createInfo(const std::string_view& name, std::vector<std::string>&& successors)
 {
 	StateInfo ret;
 	ret.name = name;
@@ -43,6 +43,7 @@ struct InfoInitializer<brigand::detail::set_impl<T...>>
 		createInfo(std::string_view{T::Name}, SuccessorInitializer<typename T::Transitions::Set>{}.successors)...
 	};
 };
+
 
 }
 }
