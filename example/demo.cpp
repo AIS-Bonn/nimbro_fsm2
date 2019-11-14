@@ -45,7 +45,7 @@ int main(int argc, char** argv)
 	//[initialize]
 
 	//[StateName]
-	ROS_INFO("Starting in state: %s", my_fsm::Idle::Name.c_str());
+	ROSFMT_INFO("Starting in state: {}", std::string_view{my_fsm::Idle::Name});
 	//[StateName]
 
 	//[setState]

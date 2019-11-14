@@ -212,7 +212,7 @@ public:
 		 *
 		 * This state name is extracted at compile time and stored either as
 		 * @p std::string_view (GCC) or a custom static string type (clang).
-		 * You can use `.c_str()` to get a runtime string.
+		 * You can use `std::string_view{x}` to get a runtime string.
 		 *
 		 * @snippet demo.cpp StateName
 		 **/
@@ -504,7 +504,7 @@ public:
 	{
 		switchState(
 			detail::Pointer<State>{detail::InPlaceInit, std::forward<Args>(args)...},
-			State::Name.c_str()
+			std::string_view{State::Name}
 		);
 	}
 
