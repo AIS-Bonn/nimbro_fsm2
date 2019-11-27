@@ -625,11 +625,17 @@ private:
 	template<class... T>
 	struct StateFactoryInitializer;
 
+	template<class T>
+	static StateWithName factory()
+	{
+		return StateWithName{detail::Pointer<StateBase>(new T), T::Name};
+	}
+
 	template<class... T>
 	struct StateFactoryInitializer<brigand::detail::set_impl<T...>>
 	{
 		std::map<std::string, StateFactory> stateFactories{{
-			{std::string{std::string_view{T::Name}}, [](){ return StateWithName{detail::Pointer<StateBase>{new T}, T::Name}; }}...
+			{std::string(std::string_view(T::Name)), &factory<T>}...
 		}};
 	};
 
