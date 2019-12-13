@@ -8,6 +8,7 @@ from __future__ import print_function
 import os
 import em
 import sys
+import re
 import rospkg
 import copy
 import argparse
@@ -52,6 +53,10 @@ def find_current_package():
     print("Can't find current package. Is the workspace sourced?")
     sys.exit()
 
+def camel_to_snake_case(name):
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
 package_name = find_current_package()
 
 #find nimbro_fsm2 package path to open the template files
@@ -82,6 +87,7 @@ args = argparser.parse_args()
 # dictionary to pass all variables to empy
 vars = {
     "state_name" : "TestState",
+    "state_filename" : "test_state",
     "state_ns" : None,
     "fsm" : "fsm",
     "driver" : "driver",
@@ -98,9 +104,11 @@ if args.namespace:
 if args.driver:
     vars["driver"] = args.driver
 
+vars["state_filename"] = camel_to_snake_case(vars["state_name"])
+
 print("Creating new nimbro_fsm2 state files:")
-print("\t- " + vars["state_name"].lower() + ".cpp")
-print("\t- " + vars["state_name"].lower() + ".h")
+print("\t- " + vars["state_filename"] + ".cpp")
+print("\t- " + vars["state_filename"] + ".h")
 
 
 # get relative fsm.h path.
@@ -128,12 +136,12 @@ if vars["state_ns"] != None:
         os.mkdir(os.path.join(package_path, "src/states", vars["state_ns"]))
     except OSError:
         print ("Folder '/src/states/%s' already exists." % vars["state_ns"])
-    include_path = os.path.join("states", vars["state_ns"], vars["state_name"].lower() + ".h")
-    state_path = os.path.join("src/states", vars["state_ns"], vars["state_name"].lower())
+    include_path = os.path.join("states", vars["state_ns"], vars["state_filename"] + ".h")
+    state_path = os.path.join("src/states", vars["state_ns"], vars["state_filename"])
 
 else:
-    include_path = os.path.join("states", vars["state_name"].lower() + ".h")
-    state_path = os.path.join("src/states", vars["state_name"].lower())
+    include_path = os.path.join("states", vars["state_filename"] + ".h")
+    state_path = os.path.join("src/states", vars["state_filename"])
 
 
 # register state in driver.cpp

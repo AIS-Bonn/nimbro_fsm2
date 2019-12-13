@@ -2,9 +2,9 @@
 // Author: @maintainer <@email>
 @{
 if state_ns:
-	headerdef = state_ns.upper() + "_" + state_name.upper()
+	headerdef = state_ns.upper() + "_" + state_filename.upper()
 else:
-	headerdef = state_name.upper()
+	headerdef = state_filename.upper()
 }
 #ifndef @headerdef@ _H
 #define @headerdef@ _H

@@ -29,10 +29,9 @@ set(CMAKE_CXX_STANDARD 17)
 
 @{
 driver_lower = driver.lower()
-state_lower = state_name.lower()
-state_path = "src/states/" + state_name.lower() + ".cpp"
+state_path = "src/states/" + state_filename + ".cpp"
 if state_ns:
-	state_path ="src/states/" + state_ns + "/" + state_name.lower() + ".cpp"
+	state_path ="src/states/" + state_ns + "/" + state_filename + ".cpp"
 }
 add_executable(@package_name
 	src/@driver_lower@ .cpp@[if create_state]

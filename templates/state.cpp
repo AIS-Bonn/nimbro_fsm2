@@ -1,6 +1,6 @@
 // @state_name state
 // Author: @maintainer <@email>
-@{file_name = state_name.lower()}
+@{file_name = state_filename}
 #include "@file_name@ .h"
 
 namespace @package_name

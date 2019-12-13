@@ -1,9 +1,9 @@
 // Driver for @package_name
 // Author: @maintainer <@email>
 @{
-state_include = state_name.lower()
+state_include = state_filename
 if state_ns:
-	state_include = state_ns + "/" + state_name.lower()
+	state_include = state_ns + "/" + state_filename
 
 driver_lower = driver.lower()
 if not state_ns:

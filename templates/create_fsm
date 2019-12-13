@@ -8,6 +8,7 @@ from __future__ import print_function
 
 import os
 import em
+import re
 import sys
 import rospkg
 import copy
@@ -27,6 +28,10 @@ def get_git_config(name):
 
 email = get_git_config("user.email")
 maintainer = get_git_config("user.name")
+
+def camel_to_snake_case(name):
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 # Creating directory
 def makedirs(path):
@@ -68,23 +73,12 @@ template_vars = {
     "fsm" : "fsm",
     "driver" : "Driver",
     "create_state" : args.create_state,
-    #"state_file" : "test_state",
+    "state_filename" : "my_state",
     "state_name" : "MyState",
     "state_ns" : None,
     "maintainer" : maintainer,
     "email" : email
 }
-
-# Interpret template file
-def interpret_template(template_path, output_path, global_vars):
-    output = open(os.path.join(package_name, output_path), "w")
-    gv = copy.deepcopy(global_vars)
-    interpretercmake = em.Interpreter(globals = gv, output = output)
-    try:
-        interpretercmake.file(open(os.path.join(fsm2_path, template_path)))
-    finally:
-        interpretercmake.shutdown()
-    output.close()
 
 if args.fsm:
     template_vars["fsm"] = args.fsm
@@ -97,6 +91,19 @@ if args.state_name:
 
 if args.state_ns:
     template_vars["state_ns"] = args.state_ns
+
+template_vars["state_filename"] = camel_to_snake_case(template_vars["state_name"])
+
+# Interpret template file
+def interpret_template(template_path, output_path, global_vars):
+    output = open(os.path.join(package_name, output_path), "w")
+    gv = copy.deepcopy(global_vars)
+    interpretercmake = em.Interpreter(globals = gv, output = output)
+    try:
+        interpretercmake.file(open(os.path.join(fsm2_path, template_path)))
+    finally:
+        interpretercmake.shutdown()
+    output.close()
 
 # Create CMakeLists
 interpret_template("CMakeLists_template.txt", "CMakeLists.txt", template_vars)
@@ -123,7 +130,7 @@ if args.create_state:
 
         template_vars["fsm"] = os.path.join("..", template_vars["fsm"])
 
-    state_path = os.path.join(state_path, template_vars["state_name"].lower())
+    state_path = os.path.join(state_path, template_vars["state_filename"])
 
     # Create state.cpp
     interpret_template("state.cpp", state_path + ".cpp", template_vars)
