@@ -14,6 +14,7 @@ else:
 #include "@driver_lower@ .h"
 
 #include <ros/init.h>
+#include <ros/rate.h>
 @[if create_state]#include "states/@state_include@ .h"
 @[end if]
 namespace @package_name
