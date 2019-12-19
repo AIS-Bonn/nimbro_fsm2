@@ -4,6 +4,7 @@
 #include <iterator>
 #include <memory>
 #include <set>
+#include <regex>
 
 #include <llvm/Support/CommandLine.h>
 
@@ -425,6 +426,26 @@ private:
 	bool ParseArgs(const clang::CompilerInstance&,
 				   const std::vector<std::string>& Args) override
 	{
+		std::regex versionRegex(R"EOS(clang version (\d+).(\d+).(\d+).*)EOS");
+		std::string version = clang::getClangFullVersion();
+		std::smatch match;
+
+		if(std::regex_match(version, match, versionRegex))
+		{
+			int major = std::atoi(match[1].str().c_str());
+			int minor = std::atoi(match[2].str().c_str());
+			if(major != CLANG_VERSION_MAJOR || minor != CLANG_VERSION_MINOR)
+			{
+				fprintf(stderr, "Version mismatch: the nimbro_fsm2 checker was compiled with Clang %d.%d, but we are running under %d.%d!\n",
+					CLANG_VERSION_MAJOR, CLANG_VERSION_MINOR,
+					major, minor
+				);
+				return false;
+			}
+		}
+		else
+			fprintf(stderr, "Warning: Could not parse clang version '%s'\n", version.c_str());
+
 		return true;
 	}
 
