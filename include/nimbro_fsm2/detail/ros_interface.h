@@ -26,6 +26,7 @@ public:
 
 		NoSuchState,
 		NotConstructible,
+		TransitionDenied,
 	};
 
 	ROSInterface();

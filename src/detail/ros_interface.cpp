@@ -104,6 +104,9 @@ void ROSInterface::report(Result result)
 		case Result::NotConstructible:
 			m_d->currentGoal.setAborted({}, "Could not construct state because it requires constructor arguments.");
 			break;
+		case Result::TransitionDenied:
+			m_d->currentGoal.setAborted({}, "Transition was denied by the FSM");
+			break;
 	}
 
 	// All reports are final for the given goal.

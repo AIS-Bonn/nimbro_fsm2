@@ -484,10 +484,16 @@ public:
 	template<class State, class ... Args>
 	void setState(Args && ... args)
 	{
-		switchState(
+		if(!switchState(
 			detail::Pointer<State>{detail::InPlaceInit, std::forward<Args>(args)...},
 			std::string_view{State::Name}
-		);
+		))
+		{
+			throw std::logic_error{fmt::format(
+				"FSM::setState(): tried to transition to {}, but isTransitionAllowed() denied it.",
+				std::string_view{State::Name}
+			)};
+		}
 	}
 
 	/**
@@ -514,8 +520,10 @@ public:
 			{
 				ROSFMT_INFO("ROS interface: requested state '{}'", stateName);
 				auto stateWithName = it->second();
-				switchState(std::move(stateWithName.first), stateWithName.second);
-				m_rosInterface.report(detail::ROSInterface::Result::Success);
+				if(switchState(std::move(stateWithName.first), stateWithName.second))
+					m_rosInterface.report(detail::ROSInterface::Result::Success);
+				else
+					m_rosInterface.report(detail::ROSInterface::Result::TransitionDenied);
 			}
 			else
 			{
@@ -550,7 +558,13 @@ public:
 			}
 
 			auto label = nextState.label();
-			switchState(std::move(nextState), label);
+			if(!switchState(std::move(nextState), label))
+			{
+				throw std::logic_error{fmt::format(
+					"State {} wanted to transition to {}, but this was not allowed by isTransitionAllowed()",
+					m_stateLabel, label
+				)};
+			}
 		}
 	}
 
@@ -582,9 +596,28 @@ public:
 		return m_infoMsg;
 	}
 
-private:
-	void switchState(detail::Pointer<StateBase>&& state, const std::string_view& label)
+protected:
+	/**
+	 * @brief Transition checking hook
+	 *
+	 * If you want to deny certain transitions, you can do so by overriding this
+	 * method.
+	 **/
+	virtual bool isTransitionAllowed([[maybe_unused]] const std::string_view& newState)
 	{
+		return true;
+	}
+
+private:
+	[[nodiscard]]
+	bool switchState(detail::Pointer<StateBase>&& state, const std::string_view& label)
+	{
+		if(!isTransitionAllowed(label))
+		{
+			ROSFMT_WARN("Transition to {} denied by isTransitionAllowed()", label);
+			return false;
+		}
+
 		if(m_state)
 		{
 			ROSFMT_INFO("Leaving state {}", m_stateLabel);
@@ -604,6 +637,8 @@ private:
 		});
 
 		m_rosInterface.pushStateHistory(std::string{m_stateLabel});
+
+		return true;
 	}
 
 	void sendROSStatus(const std::string& messages)
