@@ -608,6 +608,9 @@ protected:
 		return true;
 	}
 
+	DriverClass& driver()
+	{ return m_driver; }
+
 private:
 	[[nodiscard]]
 	bool switchState(detail::Pointer<StateBase>&& state, const std::string_view& label)
