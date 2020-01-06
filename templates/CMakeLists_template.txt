@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
 
-# We default to clang compiler in order to use the nimbro_fsm2 clang plugin
-if(NOT CMAKE_CXX_COMPILER AND NOT ENV{CXX})
-	find_program(CLANG_EXECUTABLE clang)
-	find_program(CLANGPP_EXECUTABLE clang++)
+# We default to clang compiler in order to use our own clang plugin.
+if(NOT CMAKE_CXX_COMPILER AND NOT DEFINED ENV{CXX})
+	find_program(CLANG_EXECUTABLE NAMES clang-9 clang-8 clang-7 clang-6 clang)
+	find_program(CLANGPP_EXECUTABLE NAMES clang++-9 clang++-8 clang++-7 clang++-6 clang++)
 	if(CLANG_EXECUTABLE)
 		set(CMAKE_C_COMPILER ${CLANG_EXECUTABLE})
 		set(CMAKE_CXX_COMPILER ${CLANGPP_EXECUTABLE})
