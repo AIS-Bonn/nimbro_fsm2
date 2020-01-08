@@ -12,7 +12,6 @@ qt5_wrap_cpp(MOC_SRCS
 	buttonview.h
 	timeline.h
 	node_graph.h
-	b_splines.h
 )
 
 add_library(nimbro_fsm2_gui
