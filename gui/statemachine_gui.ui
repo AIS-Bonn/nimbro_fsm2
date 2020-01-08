@@ -137,6 +137,11 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
+          <property name="font">
+           <font>
+            <family>Monospace</family>
+           </font>
+          </property>
           <property name="text">
            <string>State Info</string>
           </property>
@@ -169,6 +174,11 @@
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
+          </property>
+          <property name="font">
+           <font>
+            <family>Monospace</family>
+           </font>
           </property>
           <property name="text">
            <string>Driver Info</string>
