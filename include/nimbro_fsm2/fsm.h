@@ -129,6 +129,15 @@ public:
 		using Set = brigand::set<SuccessorStates...>;
 	};
 
+	template<typename>
+	struct is_transitions : std::false_type {};
+
+	template<typename ... Succ>
+	struct is_transitions<Transitions<Succ...>> : std::true_type {};
+
+	template<typename T>
+	static constexpr bool is_transitions_v = is_transitions<T>::value;
+
 	/**
 	 * @brief Runtime transition
 	 *
@@ -205,6 +214,12 @@ public:
 	public:
 		//! Transitions type for compile-time lookup
 		using Transitions = TransitionSpec;
+
+		static_assert(
+			is_transitions_v<Transitions>,
+			"TransitionSpec parameter should be of type FSM::Transitions<...>! "
+			"The message(s) below should tell you which state header is the problem."
+		);
 
 		//! @name Information
 		//@{
