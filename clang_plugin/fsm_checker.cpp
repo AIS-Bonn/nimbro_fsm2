@@ -90,6 +90,68 @@ auto InitializeCallMatcher = cxxMemberCallExpr(callee(cxxMethodDecl(
 	))
 )));
 
+auto ProblematicEnterMatcher = cxxMethodDecl(
+	ofClass(cxxRecordDecl(
+		isDerivedFrom("nimbro_fsm2::detail::AbstractState")
+	).bind("class")),
+
+	hasName("enter"),
+
+	// We override a non-trivial enter() (or do not have its definition)
+	forEachOverridden(cxxMethodDecl(
+		anyOf(
+			hasBody(stmt(hasDescendant(stmt()))),
+			unless(hasBody(anything()))
+		)
+	)),
+
+	// ... and we don't call it.
+	hasBody(
+		stmt(
+			unless(
+				hasDescendant(
+					callExpr(
+						callee(
+							cxxMethodDecl(hasName("enter"))
+						)
+					)
+				)
+			)
+		).bind("definition")
+	)
+);
+
+auto ProblematicLeaveMatcher = cxxMethodDecl(
+	ofClass(cxxRecordDecl(
+		isDerivedFrom("nimbro_fsm2::detail::AbstractState")
+	).bind("class")),
+
+	hasName("leave"),
+
+	// We override a non-trivial leave() (or do not have its definition)
+	forEachOverridden(cxxMethodDecl(
+		anyOf(
+			hasBody(stmt(hasDescendant(stmt()))),
+			unless(hasBody(anything()))
+		)
+	)),
+
+	// ... and we don't call it.
+	hasBody(
+		stmt(
+			unless(
+				hasDescendant(
+					callExpr(
+						callee(
+							cxxMethodDecl(hasName("leave"))
+						)
+					)
+				)
+			)
+		).bind("definition")
+	)
+);
+
 const char* PLUGIN_NAME = "nimbro_fsm2";
 
 class InterestingHandler : public MatchFinder::MatchCallback
@@ -221,6 +283,82 @@ public:
 	{ return m_transitions; }
 private:
 	std::set<const RecordType*> m_transitions;
+};
+
+class ProblematicEnterHandler : public MatchFinder::MatchCallback
+{
+public:
+	explicit ProblematicEnterHandler(CompilerInstance& C)
+	 : m_C{C}
+	{
+		m_error = C.getDiagnostics().getCustomDiagID(
+			DiagnosticsEngine::Warning,
+			"Your base state (or one of your ancestor states) has a non-trivial "
+			"enter() method. You are not calling it in your enter() method. "
+			"This is probably a bug."
+		);
+	}
+
+	void run(const MatchFinder::MatchResult& result) override
+	{
+		auto call = result.Nodes.getNodeAs<Stmt>("definition");
+		if(!call)
+			std::abort();
+
+		auto myClass = result.Nodes.getNodeAs<CXXRecordDecl>("class");
+		if(!myClass)
+			std::abort();
+
+		auto diag = m_C.getDiagnostics().Report(getLoc(*call), m_error);
+
+		if(myClass->getNumBases() == 1)
+		{
+			diag << clang::FixItHint::CreateInsertion(getLoc(*call),
+				myClass->bases_begin()->getType().getAsString() + "::enter();"
+			);
+		}
+	}
+private:
+	CompilerInstance& m_C;
+	unsigned int m_error;
+};
+
+class ProblematicLeaveHandler : public MatchFinder::MatchCallback
+{
+public:
+	explicit ProblematicLeaveHandler(CompilerInstance& C)
+	 : m_C{C}
+	{
+		m_error = C.getDiagnostics().getCustomDiagID(
+			DiagnosticsEngine::Warning,
+			"Your base state (or one of your ancestor states) has a non-trivial "
+			"leave() method. You are not calling it in your leave() method. "
+			"This is probably a bug."
+		);
+	}
+
+	void run(const MatchFinder::MatchResult& result) override
+	{
+		auto call = result.Nodes.getNodeAs<Stmt>("definition");
+		if(!call)
+			std::abort();
+
+		auto myClass = result.Nodes.getNodeAs<CXXRecordDecl>("class");
+		if(!myClass)
+			std::abort();
+
+		auto diag = m_C.getDiagnostics().Report(getLoc(*call), m_error);
+
+		if(myClass->getNumBases() == 1)
+		{
+			diag << clang::FixItHint::CreateInsertion(getLoc(*call),
+				myClass->bases_begin()->getType().getAsString() + "::leave();"
+			);
+		}
+	}
+private:
+	CompilerInstance& m_C;
+	unsigned int m_error;
 };
 
 class Consumer : public clang::ASTConsumer
@@ -371,11 +509,15 @@ public:
 		ProblematicHandler phandler{m_C};
 		InitializeHandler ihandler;
 		StateHandler stateHandler;
+		ProblematicEnterHandler enterHandler{m_C};
+		ProblematicLeaveHandler leaveHandler{m_C};
 
 		finder.addMatcher(ProblematicConstructorMatcher, &phandler);
 		finder.addMatcher(InterestingConstructorMatcher, &handler);
 		finder.addMatcher(InitializeCallMatcher, &ihandler);
 		finder.addMatcher(FullySpecifiedState, &stateHandler);
+		finder.addMatcher(ProblematicEnterMatcher, &enterHandler);
+		finder.addMatcher(ProblematicLeaveMatcher, &leaveHandler);
 		finder.matchAST(Context);
 
 		if(ihandler.matched())

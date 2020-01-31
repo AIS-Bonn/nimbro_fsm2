@@ -5,16 +5,23 @@ set_target_properties(nimbro_fsm2 PROPERTIES
 	IMPORTED_LOCATION @CATKIN_DEVEL_PREFIX@/@CATKIN_PACKAGE_LIB_DESTINATION@/libnimbro_fsm2.so
 )
 
+set(compile_options "-Wall" "-Werror=return-type")
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND @HAVE_PLUGIN@ STREQUAL "YES")
 	set_target_properties(nimbro_fsm2 PROPERTIES
 		INTERFACE_COMPILE_OPTIONS
-		"-fplugin=@CATKIN_DEVEL_PREFIX@/@CATKIN_PACKAGE_LIB_DESTINATION@/libfsm_checker.so"
+		"-fplugin=@CATKIN_DEVEL_PREFIX@/@CATKIN_PACKAGE_LIB_DESTINATION@/libfsm_checker.so;${compile_options}"
 		INTERFACE_COMPILE_DEFINITIONS
 		"NIMBRO_FSM2_CHECKED=1"
 	)
 else()
 	message(WARNING "Please use clang and compile nimbro_fsm2 with clang to "
 		"benefit from custom nimbro_fsm2 warnings!")
+
+	set_target_properties(nimbro_fsm2 PROPERTIES
+		INTERFACE_COMPILE_OPTIONS
+		"${compile_options}"
+	)
 endif()
 
 list(APPEND nimbro_fsm2_LIBRARIES nimbro_fsm2)
