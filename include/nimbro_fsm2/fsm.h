@@ -568,8 +568,9 @@ public:
 		{
 			if(!messages.empty())
 			{
-				ROSFMT_INFO("Last display messages of state {}:", m_stateLabel);
-				ROSFMT_INFO("{}", messages);
+				ROSFMT_INFO("Last display messages of state {}:\n{}",
+					m_stateLabel, messages
+				);
 			}
 
 			auto label = nextState.label();
