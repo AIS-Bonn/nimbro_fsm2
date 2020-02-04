@@ -40,7 +40,7 @@ public:
 	ActionState state{ActionState::Connecting};
 	std::optional<Goal> goal;
 
-	ros::Time startTime{ros::Time::now()};
+	ros::Time startTime{0};
 
 	ros::Duration connectTimeout{5.0};
 
@@ -94,12 +94,14 @@ ActionState ActionClient<Action>::step()
 	switch(m_d->state)
 	{
 		case ActionState::Connecting:
+			if(m_d->startTime == ros::Time(0))
+				m_d->startTime = ros::Time::now();
+
 			if(m_d->ac.isServerConnected())
 			{
 				m_d->state = ActionState::Idle;
 			}
-
-			if(ros::Time::now() - m_d->startTime > m_d->connectTimeout)
+			else if(ros::Time::now() - m_d->startTime > m_d->connectTimeout)
 			{
 				ROSFMT_ERROR("Could not connect to action server on topic {}. "
 					"Reporting action failure.",
