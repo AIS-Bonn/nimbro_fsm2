@@ -9,6 +9,8 @@
 #include <fcntl.h>
 #include <stdexcept>
 #include <sys/wait.h>
+#include <unistd.h>
+
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QVariant>

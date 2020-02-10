@@ -59,7 +59,6 @@ private:
 
 	QTimer* m_timer;
 
-	QMutex m_stateListMutex;
 	nimbro_fsm2::InfoConstPtr m_stateList;
 
 	ros::Subscriber m_sub_status;

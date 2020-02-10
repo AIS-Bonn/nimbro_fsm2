@@ -194,7 +194,6 @@ void StateMachineGUI::shutdownPlugin()
 
 void StateMachineGUI::handleInfo(const InfoConstPtr& msg)
 {
-	QMutexLocker locker(&m_stateListMutex);
 	m_stateList = msg;
 	m_ui->timeline->updateStateList(msg);
 	m_ui->nodeGraph->updateInfo(msg);
