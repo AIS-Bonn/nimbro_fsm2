@@ -78,10 +78,7 @@ void TimeLine::paintEvent(QPaintEvent*)
 	int num_states = m_stateList.states.size();
 
 	if(m_data.history.size() < 1 || num_states < 1)
-	{
-		ROS_WARN_THROTTLE(2.0, "Waiting... (history size: %i, stateList size:  %i", (int)m_data.history.size(), num_states);
 		return;
-	}
 
 	float right_offset = 20;
 	float num_of_secs = (ros::Time::now() - m_data.history[0].start).toSec();
