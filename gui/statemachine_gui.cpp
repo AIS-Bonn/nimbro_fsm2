@@ -125,9 +125,10 @@ void StateMachineGUI::restoreSettings(const qt_gui_cpp::Settings& plugin_setting
 
 void StateMachineGUI::checkAutoTopic()
 {
-	refreshTopicList();
+	if(m_shuttingDown)
+		return;
 
-	std::cout << "check topic: " << m_ui->prefixComboBox->count() << "\n";
+	refreshTopicList();
 
 	// Stupid heuristic: Select the first matching
 	if(m_ui->prefixComboBox->count() > 1)
@@ -233,6 +234,7 @@ void StateMachineGUI::shutdownPlugin()
 	rqt_gui_cpp::Plugin::shutdownPlugin();
 	m_sub_status.shutdown();
 	m_sub_info.shutdown();
+	m_ac.reset();
 	m_shuttingDown = true;
 }
 
@@ -308,6 +310,9 @@ void StateMachineGUI::timerCB()
 
 void StateMachineGUI::checkActionClient()
 {
+	if(m_shuttingDown)
+		return;
+
 	if(m_actionActive)
 	{
 		auto state = m_ac->getState();
