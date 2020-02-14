@@ -89,6 +89,7 @@ public Q_SLOTS:
 	void checkboxGraphRatio(bool checked);
 	void checkboxGraphTranspose(bool checked);
 	void checkboxSubgraph(bool checked);
+	void checkboxSubgraphAlign(bool checked);
 private:
 	QTimer* m_timer;
 	nimbro_fsm2::InfoConstPtr m_stateList;
@@ -102,6 +103,7 @@ private:
 	bool m_graph_ratio = false;
 	bool m_graph_transpose = false;
 	bool m_graph_subgraph = false;
+	bool m_graph_subgraph_align = false;
 	void updateStatus();
 	nimbro_fsm2::StatusConstPtr m_statusMsg;
 

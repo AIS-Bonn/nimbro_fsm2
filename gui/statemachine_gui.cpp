@@ -78,6 +78,7 @@ void StateMachineGUI::initPlugin(qt_gui_cpp::PluginContext& ctx)
 	QObject::connect(m_ui->check_transpose, SIGNAL(clicked(bool)), m_ui->nodeGraph, SLOT(checkboxGraphTranspose(bool)));
 	QObject::connect(m_ui->check_subgraph, SIGNAL(clicked(bool)), m_ui->nodeGraph, SLOT(checkboxSubgraph(bool)));
 	QObject::connect(m_ui->check_subgraph, SIGNAL(clicked(bool)), m_ui->timeline->getTimeLineWidget(), SLOT(checkboxSubgraph(bool)));
+	QObject::connect(m_ui->check_subgraph_align, SIGNAL(clicked(bool)), m_ui->nodeGraph, SLOT(checkboxSubgraphAlign(bool)));
 
 	connect(this, SIGNAL(actionClientFinished()), SLOT(checkActionClient()), Qt::QueuedConnection);
 
@@ -94,6 +95,7 @@ void StateMachineGUI::saveSettings(qt_gui_cpp::Settings& plugin_settings, qt_gui
 	instance_settings.setValue("check_ratio", m_ui->check_ratio->isChecked());
 	instance_settings.setValue("check_transpose", m_ui->check_transpose->isChecked());
 	instance_settings.setValue("check_subgraph", m_ui->check_subgraph->isChecked());
+	instance_settings.setValue("check_subgraph_align", m_ui->check_subgraph_align->isChecked());
 
 	instance_settings.setValue("splitter_h", m_ui->splitter_h->saveState());
 	instance_settings.setValue("splitter_v", m_ui->splitter_v->saveState());
@@ -118,6 +120,10 @@ void StateMachineGUI::restoreSettings(const qt_gui_cpp::Settings& plugin_setting
 	m_ui->check_subgraph->setChecked(val_subgraph);
 	m_ui->nodeGraph->checkboxSubgraph(val_subgraph);
 	m_ui->timeline->getTimeLineWidget()->checkboxSubgraph(val_subgraph);
+
+	bool val_subgraph_align = instance_settings.value("check_subgraph_align").toBool();
+	m_ui->check_subgraph_align->setChecked(val_subgraph_align);
+	m_ui->nodeGraph->checkboxSubgraphAlign(val_subgraph_align);
 
 	m_ui->splitter_h->restoreState(instance_settings.value("splitter_h").toByteArray());
 	m_ui->splitter_v->restoreState(instance_settings.value("splitter_v").toByteArray());
