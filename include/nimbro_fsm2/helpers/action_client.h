@@ -42,6 +42,7 @@ public:
 	~ActionClient();
 
 	void setGoal(const Goal& goal);
+	void setNewGoal(const Goal& goal);
 	void resend();
 
 	[[nodiscard]] ActionState step();
