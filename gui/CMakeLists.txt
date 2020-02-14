@@ -9,7 +9,6 @@ qt5_wrap_ui(UI_HDRS
 
 qt5_wrap_cpp(MOC_SRCS
 	statemachine_gui.h
-	buttonview.h
 	timeline.h
 	node_graph.h
 )
@@ -18,7 +17,6 @@ add_library(nimbro_fsm2_gui
 	${UI_HDRS}
 	${MOC_SRCS}
 	statemachine_gui.cpp
-	buttonview.cpp
 	timeline.cpp
 	node_graph.cpp
 	b_splines.cpp
