@@ -34,7 +34,7 @@ TimeLine::TimeLine(QScrollBar* scrollbar, QWidget* parent)
 : QWidget(parent)
 , m_scrollbar(scrollbar)
 {
-	m_timer = new QTimer();
+	m_timer = new QTimer(this);
 	m_timer->setInterval(100);
 	m_timer->start();
 
