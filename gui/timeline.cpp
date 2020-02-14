@@ -136,7 +136,7 @@ void TimeLine::paintEvent(QPaintEvent*)
 
 	QFont font;
 	pixelsize = std::min(pixelsize,(float)h_tasks * 0.8f);
-	font.setPixelSize(pixelsize);
+	font.setPixelSize(std::max(pixelsize, 1.0f));
 
 	//Paint names
 	int idx = 0;
