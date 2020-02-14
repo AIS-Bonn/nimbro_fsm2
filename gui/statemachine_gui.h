@@ -52,12 +52,14 @@ private Q_SLOTS:
 
 	void processStatus(const nimbro_fsm2::StatusConstPtr& msg);
 	void handleInfo(const nimbro_fsm2::InfoConstPtr& msg);
+	void checkAutoTopic();
 private:
 
 	QWidget* m_w;
 	Ui_StateMachineGUI* m_ui;
 
 	QTimer* m_timer;
+	QTimer* m_autoTimer;
 
 	nimbro_fsm2::InfoConstPtr m_stateList;
 

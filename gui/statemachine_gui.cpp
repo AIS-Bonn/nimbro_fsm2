@@ -21,6 +21,8 @@ Q_DECLARE_METATYPE(nimbro_fsm2::InfoConstPtr);
 namespace nimbro_fsm2
 {
 
+const std::string AUTONAME = "[AUTO]";
+
 StateMachineGUI::StateMachineGUI()
  : m_ui(0)
  , m_shuttingDown(false)
@@ -58,7 +60,12 @@ void StateMachineGUI::initPlugin(qt_gui_cpp::PluginContext& ctx)
 
 	m_timer = new QTimer(this);
 	QObject::connect(m_timer , SIGNAL(timeout()), SLOT(timerCB()));
-	m_timer ->start(100);
+	m_timer->start(100);
+
+	m_autoTimer = new QTimer(this);
+	m_autoTimer->setInterval(1000);
+	connect(m_autoTimer, SIGNAL(timeout()), SLOT(checkAutoTopic()));
+	m_autoTimer->start();
 
 	QObject::connect(m_ui->prefixComboBox, SIGNAL(activated(QString)), SLOT(subscribe()));
 	QObject::connect(m_ui->refreshButton, SIGNAL(clicked(bool)), SLOT(refreshTopicList()));
@@ -71,8 +78,11 @@ void StateMachineGUI::initPlugin(qt_gui_cpp::PluginContext& ctx)
 	QObject::connect(m_ui->check_transpose, SIGNAL(clicked(bool)), m_ui->nodeGraph, SLOT(checkboxGraphTranspose(bool)));
 	QObject::connect(m_ui->check_subgraph, SIGNAL(clicked(bool)), m_ui->nodeGraph, SLOT(checkboxSubgraph(bool)));
 	QObject::connect(m_ui->check_subgraph, SIGNAL(clicked(bool)), m_ui->timeline->getTimeLineWidget(), SLOT(checkboxSubgraph(bool)));
+	QObject::connect(m_ui->check_subgraph_align, SIGNAL(clicked(bool)), m_ui->nodeGraph, SLOT(checkboxSubgraphAlign(bool)));
 
 	connect(this, SIGNAL(actionClientFinished()), SLOT(checkActionClient()), Qt::QueuedConnection);
+
+	m_prefix = AUTONAME;
 
 }
 
@@ -85,6 +95,7 @@ void StateMachineGUI::saveSettings(qt_gui_cpp::Settings& plugin_settings, qt_gui
 	instance_settings.setValue("check_ratio", m_ui->check_ratio->isChecked());
 	instance_settings.setValue("check_transpose", m_ui->check_transpose->isChecked());
 	instance_settings.setValue("check_subgraph", m_ui->check_subgraph->isChecked());
+	instance_settings.setValue("check_subgraph_align", m_ui->check_subgraph_align->isChecked());
 
 	instance_settings.setValue("splitter_h", m_ui->splitter_h->saveState());
 	instance_settings.setValue("splitter_v", m_ui->splitter_v->saveState());
@@ -110,8 +121,31 @@ void StateMachineGUI::restoreSettings(const qt_gui_cpp::Settings& plugin_setting
 	m_ui->nodeGraph->checkboxSubgraph(val_subgraph);
 	m_ui->timeline->getTimeLineWidget()->checkboxSubgraph(val_subgraph);
 
+	bool val_subgraph_align = instance_settings.value("check_subgraph_align").toBool();
+	m_ui->check_subgraph_align->setChecked(val_subgraph_align);
+	m_ui->nodeGraph->checkboxSubgraphAlign(val_subgraph_align);
+
 	m_ui->splitter_h->restoreState(instance_settings.value("splitter_h").toByteArray());
 	m_ui->splitter_v->restoreState(instance_settings.value("splitter_v").toByteArray());
+}
+
+void StateMachineGUI::checkAutoTopic()
+{
+	if(m_shuttingDown)
+		return;
+
+	refreshTopicList();
+
+	// Stupid heuristic: Select the first matching
+	if(m_ui->prefixComboBox->count() > 1)
+	{
+		m_ui->prefixComboBox->setCurrentIndex(1);
+		m_prefix = m_ui->prefixComboBox->currentText().toStdString();
+		subscribe();
+	}
+	else
+		m_ui->prefixComboBox->setCurrentIndex(0);
+
 }
 
 void StateMachineGUI::refreshTopicList()
@@ -124,7 +158,10 @@ void StateMachineGUI::refreshTopicList()
 
 	m_ui->prefixComboBox->clear();
 
-	int idx = 0;
+	m_ui->prefixComboBox->addItem(QString::fromStdString(AUTONAME));
+	m_ui->prefixComboBox->setCurrentIndex(0);
+
+	int idx = 1;
 	BOOST_FOREACH(const ros::master::TopicInfo topic, topics)
 	{
 		if(topic.datatype != "nimbro_fsm2/Info")
@@ -149,18 +186,32 @@ void StateMachineGUI::refreshTopicList()
 
 void StateMachineGUI::subscribe()
 {
-	ros::NodeHandle nh = getPrivateNodeHandle();
-	std::string prefix = m_ui->prefixComboBox->currentText().toStdString();
-	m_prefix = prefix;
+	m_prefix = m_ui->prefixComboBox->currentText().toStdString();
+	m_w->setWindowTitle(QString::fromStdString(m_prefix));
 
-	m_sub_status = nh.subscribe(prefix + "/status", 1, &StateMachineGUI::statusReceived, this);
-	m_sub_info = nh.subscribe(prefix + "/info", 1, &StateMachineGUI::infoReceived, this);
+	if(m_prefix == AUTONAME)
+	{
+		m_sub_status.shutdown();
+		m_sub_info.shutdown();
+
+		checkAutoTopic();
+		m_autoTimer->start();
+	}
+	else
+		m_autoTimer->stop();
+
+
+	if(m_prefix == AUTONAME)
+		return;
+
+	ros::NodeHandle nh = getPrivateNodeHandle();
+	m_sub_status = nh.subscribe(m_prefix + "/status", 1, &StateMachineGUI::statusReceived, this);
+	m_sub_info = nh.subscribe(m_prefix + "/info", 1, &StateMachineGUI::infoReceived, this);
 
 	m_ac.reset(new actionlib::SimpleActionClient<nimbro_fsm2::ChangeStateAction>(
-		nh, prefix + "/change_state", false)
+		nh, m_prefix + "/change_state", false)
 	);
 
-	m_w->setWindowTitle(QString::fromStdString(m_prefix));
 }
 
 void StateMachineGUI::processStatus(const StatusConstPtr& msg)
@@ -189,6 +240,7 @@ void StateMachineGUI::shutdownPlugin()
 	rqt_gui_cpp::Plugin::shutdownPlugin();
 	m_sub_status.shutdown();
 	m_sub_info.shutdown();
+	m_ac.reset();
 	m_shuttingDown = true;
 }
 
@@ -259,10 +311,14 @@ void StateMachineGUI::timerCB()
 		m_ui->btn_changeState->setText("Change State ->");
 		m_ui->btn_changeState->setEnabled(true);
 	}
+
 }
 
 void StateMachineGUI::checkActionClient()
 {
+	if(m_shuttingDown)
+		return;
+
 	if(m_actionActive)
 	{
 		auto state = m_ac->getState();

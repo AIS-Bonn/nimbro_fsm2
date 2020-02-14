@@ -127,7 +127,7 @@ namespace nimbro_fsm2_node_graph
 NodeGraph::NodeGraph(QWidget* parent)
     : QWidget(parent)
 {
-    m_timer = new QTimer();
+    m_timer = new QTimer(this);
     m_timer->setInterval(100);
     m_timer->start();
 
@@ -215,7 +215,7 @@ void NodeGraph::paintEvent(QPaintEvent*)
 
 		QFont font;
 		int pixelsize = std::min(sg_rect.width() / sg.label.size(), sg_rect.height());
-		font.setPixelSize(pixelsize / 2);
+		font.setPixelSize(std::max(pixelsize / 2, 1));
 		painter.setFont(font);
 
 		color.setAlpha(200);
@@ -244,7 +244,7 @@ void NodeGraph::paintEvent(QPaintEvent*)
 		QFont font;
 
 		int pixelsize = std::min((float)n_rect.height(),(float)n_rect.width() / n.label.size() * 1.7f);
-		font.setPixelSize(pixelsize);
+		font.setPixelSize(std::max(pixelsize, 1));
 		painter.setFont(font);
 
         painter.drawText(n_rect, Qt::AlignCenter, n.label);
@@ -388,6 +388,11 @@ void NodeGraph::checkboxSubgraph(bool checked)
     generateGraph();
 }
 
+void NodeGraph::checkboxSubgraphAlign(bool checked)
+{
+    m_graph_subgraph_align = checked;
+    generateGraph();
+}
 
 void NodeGraph::updateInfo(const nimbro_fsm2::InfoConstPtr& msg)
 {
@@ -429,6 +434,7 @@ void NodeGraph::generateGraph()
     }
     if(m_graph_transpose)
         ss << "rankdir=LR;\n";
+	ss << "newrank=true;\n";
 
     for(int i=0; i < (int)m_stateList->states.size(); i++)
     {
@@ -486,6 +492,22 @@ void NodeGraph::generateGraph()
             ss << "  }\n";
     }
 
+		if(m_graph_subgraph && m_graph_subgraph_align)
+		{
+			subgraph_id = 0;
+			ss << "{\nrank=same;";
+			for(auto& [ns , nodes] : subgraph_list)
+			{
+				if(!ns.empty() && !nodes.empty())
+				{
+					std::string full_name = ns + "::" + nodes.front();
+
+					ss << fmt::format("v{};", map_node_id[full_name]);
+				}
+			}
+			ss << "\n}\n";
+		}
+
 
     //Edges
     for(int i=0; i<(int)m_stateList->states.size(); i++)
@@ -541,6 +563,10 @@ void NodeGraph::interpreteJsonGraph(const QJsonDocument qd)
     for(auto& nodes: node_list)
     {
         QVariantMap node_map = nodes.toMap();
+
+		if(!node_map.contains("_draw_"))
+			continue;
+
         Node n;
 		n.id = node_map["_gvid"].toInt();
         n.label = node_map["label"].toString();

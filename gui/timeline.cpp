@@ -34,7 +34,7 @@ TimeLine::TimeLine(QScrollBar* scrollbar, QWidget* parent)
 : QWidget(parent)
 , m_scrollbar(scrollbar)
 {
-	m_timer = new QTimer();
+	m_timer = new QTimer(this);
 	m_timer->setInterval(100);
 	m_timer->start();
 
@@ -78,10 +78,7 @@ void TimeLine::paintEvent(QPaintEvent*)
 	int num_states = m_stateList.states.size();
 
 	if(m_data.history.size() < 1 || num_states < 1)
-	{
-		ROS_WARN_THROTTLE(2.0, "Waiting... (history size: %i, stateList size:  %i", (int)m_data.history.size(), num_states);
 		return;
-	}
 
 	float right_offset = 20;
 	float num_of_secs = (ros::Time::now() - m_data.history[0].start).toSec();
@@ -139,7 +136,7 @@ void TimeLine::paintEvent(QPaintEvent*)
 
 	QFont font;
 	pixelsize = std::min(pixelsize,(float)h_tasks * 0.8f);
-	font.setPixelSize(pixelsize);
+	font.setPixelSize(std::max(pixelsize, 1.0f));
 
 	//Paint names
 	int idx = 0;
