@@ -81,6 +81,7 @@ template<typename Action>
 void ActionClient<Action>::setNewGoal(const ActionClient::Goal& goal)
 {
 	m_d->goal = goal;
+	m_d->state = ActionState::Succeeded; // set so new goal can be resend
 	resend();
 }
 
