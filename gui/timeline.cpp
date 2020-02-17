@@ -331,11 +331,15 @@ void TimeLine::updateTimeline(const nimbro_fsm2::StatusConstPtr& msg)
 	m_data = *msg;
 
 	// Remove anything too far in the past (can happen with use_sim_time)
-	ros::Time cutoff = ros::Time::now() - ros::Duration(60.0*60.0);
-	auto it = std::remove_if(m_data.history.begin(), m_data.history.end(), [&cutoff](auto& item){
-		return  item.start < cutoff || item.end < cutoff;
-	});
-	m_data.history.erase(it, m_data.history.end());
+	const ros::Duration CUTOFF{60.0*60.0};
+	if(ros::Time::now() > ros::Time{0} + CUTOFF)
+	{
+		ros::Time cutoff = ros::Time::now() - CUTOFF;
+		auto it = std::remove_if(m_data.history.begin(), m_data.history.end(), [&cutoff](auto& item){
+			return  item.start < cutoff || item.end < cutoff;
+		});
+		m_data.history.erase(it, m_data.history.end());
+	}
 
 // 	update();
 }
