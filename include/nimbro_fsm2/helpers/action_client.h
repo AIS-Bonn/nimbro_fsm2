@@ -25,6 +25,7 @@ enum class ActionState
 	InProcess,
 	Succeeded,
 	Failed,
+	Canceled,
 };
 
 template<class ActionSpec>
@@ -44,6 +45,7 @@ public:
 	void setGoal(const Goal& goal);
 	void setNewGoal(const Goal& goal);
 	void resend();
+	void cancel();
 
 	[[nodiscard]] ActionState step();
 
@@ -73,6 +75,7 @@ inline std::ostream& operator<<(std::ostream& stream, nimbro_fsm2::helpers::Acti
 		case ActionState::InProcess:  stream << "InProcess";  return stream;
 		case ActionState::Succeeded:  stream << "Succeeded";  return stream;
 		case ActionState::Failed:     stream << "Failed";     return stream;
+		case ActionState::Canceled:   stream << "Canceled";   return stream;
 	}
 
 	stream << "INVALID";

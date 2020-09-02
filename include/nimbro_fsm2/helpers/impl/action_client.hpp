@@ -88,12 +88,22 @@ void ActionClient<Action>::setNewGoal(const ActionClient::Goal& goal)
 template<typename Action>
 void ActionClient<Action>::resend()
 {
-	if(m_d->state != ActionState::Failed && m_d->state != ActionState::Succeeded)
+	if(m_d->state != ActionState::Failed && m_d->state != ActionState::Succeeded && m_d->state != ActionState::Canceled)
 	{
 		throw std::logic_error("You called resend() without being in a terminal state (Succeeded/Failed)");
 	}
 
 	m_d->state = ActionState::Idle;
+}
+
+template<typename Action>
+void ActionClient<Action>::cancel()
+{
+    if(m_d->state != ActionState::InProcess)
+		return;
+
+	m_d->ac.cancelGoal();
+	m_d->state = ActionState::Canceled;
 }
 
 template<typename Action>
