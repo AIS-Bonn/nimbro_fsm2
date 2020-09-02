@@ -174,6 +174,7 @@ ActionState ActionClient<Action>::step()
 		}
 		case ActionState::Succeeded:
 		case ActionState::Failed:
+		case ActionState::Canceled:
 			break;
 	}
 
