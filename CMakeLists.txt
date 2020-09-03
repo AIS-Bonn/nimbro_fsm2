@@ -119,12 +119,6 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND ${HAVE_PLUGIN} STREQUAL "YES")
 		PUBLIC "NIMBRO_FSM2_CHECKED=1"
 	)
 	add_dependencies(nimbro_fsm2 fsm_checker)
-
-	install(TARGETS fsm_checker
-		ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-		LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-		RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-	)
 else()
 	message(WARNING "Consider switching to clang to make use of nimbro_fsm2's "
 		"clang plugin for better diagnostics")
