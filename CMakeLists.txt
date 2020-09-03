@@ -98,6 +98,15 @@ add_dependencies(nimbro_fsm2
 	${PROJECT_NAME}_generate_messages_cpp
 )
 
+install(DIRECTORY include/
+	DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
+)
+install(TARGETS nimbro_fsm2
+	ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+	LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+	RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
+
 # If we have the compiler plugin, attach the compiler options for loading to
 # the nimbro_fsm2 target. NOTE: This is only used for internal targets,
 # for the exported version see cmake/nimbro_fsm2.cmake.in.
@@ -110,6 +119,12 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND ${HAVE_PLUGIN} STREQUAL "YES")
 		PUBLIC "NIMBRO_FSM2_CHECKED=1"
 	)
 	add_dependencies(nimbro_fsm2 fsm_checker)
+
+	install(TARGETS fsm_checker
+		ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+		LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+		RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+	)
 else()
 	message(WARNING "Consider switching to clang to make use of nimbro_fsm2's "
 		"clang plugin for better diagnostics")
@@ -141,5 +156,11 @@ if(CATKIN_ENABLE_TESTING)
 		nimbro_fsm2
 	)
 	add_rostest(test/simple_fsm.test DEPENDENCIES test_simple_fsm)
+
+	install(TARGETS unit_tests test_simple_fsm
+		ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+		LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+		RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+	)
 endif()
 
