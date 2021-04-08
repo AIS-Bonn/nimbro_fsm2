@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.2)
 
 # We default to clang compiler in order to use our own clang plugin.
 if(NOT CMAKE_CXX_COMPILER AND NOT DEFINED ENV{CXX})
-	find_program(CLANG_EXECUTABLE NAMES clang-9 clang-8 clang-7 clang-6 clang)
-	find_program(CLANGPP_EXECUTABLE NAMES clang++-9 clang++-8 clang++-7 clang++-6 clang++)
+	find_program(CLANG_EXECUTABLE NAMES clang-10 clang-9 clang-8 clang-7 clang-6 clang)
+	find_program(CLANGPP_EXECUTABLE NAMES clang++-10 clang++-9 clang++-8 clang++-7 clang++-6 clang++)
 	if(CLANG_EXECUTABLE)
 		set(CMAKE_C_COMPILER ${CLANG_EXECUTABLE})
 		set(CMAKE_CXX_COMPILER ${CLANGPP_EXECUTABLE})
