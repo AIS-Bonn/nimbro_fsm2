@@ -695,7 +695,7 @@ private:
 
 	DriverClass& m_driver;
 	detail::Pointer<StateBase> m_state;
-	std::string_view m_stateLabel = nullptr;
+	std::string_view m_stateLabel;
 
 	std::map<std::string, StateFactory> m_factories;
 

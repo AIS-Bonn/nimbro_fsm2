@@ -434,7 +434,7 @@ void NodeGraph::generateGraph()
     }
     if(m_graph_transpose)
         ss << "rankdir=LR;\n";
-	ss << "newrank=true;\n";
+    ss << "newrank=true;\n";
 
     for(int i=0; i < (int)m_stateList->states.size(); i++)
     {
@@ -705,7 +705,7 @@ QRect NodeGraph::jsonBB(QVariantMap* node_map, QString key, bool window)
 		if(!window)
 			y = m_graph.bb.height() - ym;
 
-		return QRect(x,y,w,h);
+		return QRect(int(x),int(y),int(w),int(h));
 	}
 	ROS_ERROR("could not find bounding box in json data :(");
 	return QRect(0,0,0,0);

@@ -44,7 +44,9 @@ Q_SIGNALS:
 
 private Q_SLOTS:
 	void refreshTopicList();
-	void subscribe();
+
+	void handleTopicBox(const QString& choice);
+	void subscribe(const std::string& topic);
 	void changeState();
 	void changeStateTo(std::string state);
 	void timerCB();

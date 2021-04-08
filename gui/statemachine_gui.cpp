@@ -67,7 +67,9 @@ void StateMachineGUI::initPlugin(qt_gui_cpp::PluginContext& ctx)
 	connect(m_autoTimer, SIGNAL(timeout()), SLOT(checkAutoTopic()));
 	m_autoTimer->start();
 
-	QObject::connect(m_ui->prefixComboBox, SIGNAL(activated(QString)), SLOT(subscribe()));
+	connect(m_ui->prefixComboBox, SIGNAL(editTextChanged(QString)),
+		SLOT(handleTopicBox(QString))
+	);
 	QObject::connect(m_ui->refreshButton, SIGNAL(clicked(bool)), SLOT(refreshTopicList()));
 	QObject::connect(m_ui->btn_changeState, SIGNAL(clicked(bool)), SLOT(changeState()));
 	m_ui->btn_changeState->setStyleSheet("background-color : lightgrey");
@@ -82,15 +84,15 @@ void StateMachineGUI::initPlugin(qt_gui_cpp::PluginContext& ctx)
 
 	connect(this, SIGNAL(actionClientFinished()), SLOT(checkActionClient()), Qt::QueuedConnection);
 
+	m_ui->prefixComboBox->setCurrentText(QString::fromStdString(AUTONAME));
 	m_prefix = AUTONAME;
-
 }
 
 void StateMachineGUI::saveSettings(qt_gui_cpp::Settings& plugin_settings, qt_gui_cpp::Settings& instance_settings) const
 {
 	qt_gui_cpp::Plugin::saveSettings(plugin_settings, instance_settings);
 
-	instance_settings.setValue("prefix", QString::fromStdString(m_prefix));
+	instance_settings.setValue("prefix", m_ui->prefixComboBox->currentText());
 
 	instance_settings.setValue("check_ratio", m_ui->check_ratio->isChecked());
 	instance_settings.setValue("check_transpose", m_ui->check_transpose->isChecked());
@@ -105,8 +107,9 @@ void StateMachineGUI::restoreSettings(const qt_gui_cpp::Settings& plugin_setting
 {
 	qt_gui_cpp::Plugin::restoreSettings(plugin_settings, instance_settings);
 
-	m_prefix = instance_settings.value("prefix").toString().toStdString();
-	refreshTopicList();
+	QString ns = instance_settings.value("prefix").toString();
+	m_ui->prefixComboBox->setCurrentText(ns);
+	subscribe(ns.toStdString());
 
 	bool val_ratio = instance_settings.value("check_ratio").toBool();
 	m_ui->check_ratio->setChecked(val_ratio);
@@ -139,13 +142,11 @@ void StateMachineGUI::checkAutoTopic()
 	// Stupid heuristic: Select the first matching
 	if(m_ui->prefixComboBox->count() > 1)
 	{
-		m_ui->prefixComboBox->setCurrentIndex(1);
-		m_prefix = m_ui->prefixComboBox->currentText().toStdString();
-		subscribe();
+		QString topic = m_ui->prefixComboBox->itemText(1);
+		subscribe(topic.toStdString());
 	}
 	else
-		m_ui->prefixComboBox->setCurrentIndex(0);
-
+		subscribe("");
 }
 
 void StateMachineGUI::refreshTopicList()
@@ -156,16 +157,23 @@ void StateMachineGUI::refreshTopicList()
 	ros::master::V_TopicInfo topics;
 	ros::master::getTopics(topics);
 
-	m_ui->prefixComboBox->clear();
+	std::sort(topics.begin(), topics.end(), [](const auto& a, const auto& b) {
+		return a.name < b.name;
+	});
 
+	m_ui->prefixComboBox->blockSignals(true);
+	m_ui->prefixComboBox->clear();
 	m_ui->prefixComboBox->addItem(QString::fromStdString(AUTONAME));
 	m_ui->prefixComboBox->setCurrentIndex(0);
 
 	int idx = 1;
-	BOOST_FOREACH(const ros::master::TopicInfo topic, topics)
+	for(const ros::master::TopicInfo& topic : topics)
 	{
+		ROS_INFO("Topic: %s, type %s", topic.name.c_str(), topic.datatype.c_str());
 		if(topic.datatype != "nimbro_fsm2/Info")
 			continue;
+
+		ROS_INFO("Considering topic '%s'", topic.name.c_str());
 
 		int pos = topic.name.rfind("/info");
 		if(pos < 0)
@@ -177,29 +185,32 @@ void StateMachineGUI::refreshTopicList()
 		if(prefix == m_prefix)
 		{
 			m_ui->prefixComboBox->setCurrentIndex(idx);
-			subscribe();
+			subscribe(prefix);
 		}
 		++idx;
 	}
 
+	m_ui->prefixComboBox->blockSignals(false);
 }
 
-void StateMachineGUI::subscribe()
+void StateMachineGUI::handleTopicBox(const QString& choice)
 {
-	m_prefix = m_ui->prefixComboBox->currentText().toStdString();
-	m_w->setWindowTitle(QString::fromStdString(m_prefix));
-
-	if(m_prefix == AUTONAME)
+	if(choice.toStdString() == AUTONAME)
 	{
-		m_sub_status.shutdown();
-		m_sub_info.shutdown();
-
 		checkAutoTopic();
 		m_autoTimer->start();
 	}
 	else
+	{
+		subscribe(choice.toStdString());
 		m_autoTimer->stop();
+	}
+}
 
+void StateMachineGUI::subscribe(const std::string& topic)
+{
+	m_prefix = m_ui->prefixComboBox->currentText().toStdString();
+	m_w->setWindowTitle(QString::fromStdString(topic));
 
 	if(m_prefix == AUTONAME)
 		return;
@@ -211,7 +222,6 @@ void StateMachineGUI::subscribe()
 	m_ac.reset(new actionlib::SimpleActionClient<nimbro_fsm2::ChangeStateAction>(
 		nh, m_prefix + "/change_state", false)
 	);
-
 }
 
 void StateMachineGUI::processStatus(const StatusConstPtr& msg)
