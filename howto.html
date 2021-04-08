@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Getting started | nimbro_fsm2 docs</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400i,600,600i%7CSource+Code+Pro:400,400i,600&amp;subset=latin-ext" />
+  <link rel="stylesheet" href="m-dark+documentation.compiled.css" />
+  <link rel="icon" href="favicon-dark.png" type="image/png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#22272e" />
+</head>
+<body>
+<header><nav id="navigation">
+  <div class="m-container">
+    <div class="m-row">
+      <span id="m-navbar-brand" class="m-col-t-8 m-col-m-none m-left-m">
+        <a href="http://nimbroshared.pages.ais.uni-bonn.de/nimbro_fsm2/">nimbro_fsm2</a> <span class="m-breadcrumb">|</span> <a href="index.html" class="m-thin">docs</a>
+      </span>
+      <div class="m-col-t-4 m-hide-m m-text-right m-nopadr">
+        <a href="#search" class="m-doc-search-icon" title="Search" onclick="return showSearch()"><svg style="height: 0.9rem;" viewBox="0 0 16 16">
+          <path id="m-doc-search-icon-path" d="m6 0c-3.31 0-6 2.69-6 6 0 3.31 2.69 6 6 6 1.49 0 2.85-0.541 3.89-1.44-0.0164 0.338 0.147 0.759 0.5 1.15l3.22 3.79c0.552 0.614 1.45 0.665 2 0.115 0.55-0.55 0.499-1.45-0.115-2l-3.79-3.22c-0.392-0.353-0.812-0.515-1.15-0.5 0.895-1.05 1.44-2.41 1.44-3.89 0-3.31-2.69-6-6-6zm0 1.56a4.44 4.44 0 0 1 4.44 4.44 4.44 4.44 0 0 1-4.44 4.44 4.44 4.44 0 0 1-4.44-4.44 4.44 4.44 0 0 1 4.44-4.44z"/>
+        </svg></a>
+        <a id="m-navbar-show" href="#navigation" title="Show navigation"></a>
+        <a id="m-navbar-hide" href="#" title="Hide navigation"></a>
+      </div>
+      <div id="m-navbar-collapse" class="m-col-t-12 m-show-m m-col-m-none m-right-m">
+        <div class="m-row">
+          <ol class="m-col-t-6 m-col-m-none">
+            <li><a href="howto.html" id="m-navbar-current">Getting started</a></li>
+            <li><a href="pages.html">Pages</a></li>
+            <li><a href="namespaces.html">Namespaces</a></li>
+          </ol>
+          <ol class="m-col-t-6 m-col-m-none" start="4">
+            <li><a href="annotated.html">Classes</a></li>
+            <li><a href="files.html">Files</a></li>
+            <li class="m-show-m"><a href="#search" class="m-doc-search-icon" title="Search" onclick="return showSearch()"><svg style="height: 0.9rem;" viewBox="0 0 16 16">
+              <use href="#m-doc-search-icon-path" />
+            </svg></a></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav></header>
+<main><article>
+  <div class="m-container m-container-inflatable">
+    <div class="m-row">
+      <div class="m-col-l-10 m-push-l-1">
+        <h1>
+          Getting started
+        </h1>
+        <div class="m-block m-default">
+          <h3>Contents</h3>
+          <ul>
+            <li><a href="#howto-ros-package">Creating a ROS package with nimbro_fsm2</a></li>
+            <li><a href="#howto-types">Defining your FSM &amp; driver types</a></li>
+            <li><a href="#howto-state">Creating a state</a></li>
+            <li><a href="#howto-control">Running the FSM</a></li>
+            <li><a href="#ui">Debugging and Visualization</a></li>
+          </ul>
+        </div>
+<p>This document is intended as a short guide for writing an FSM using <code>nimbro_fsm2</code>. It will cover creation of a ROS package depending on <code>nimbro_fsm2</code>, defining your FSM &amp; driver types, and creating states.</p><section id="howto-ros-package"><h2><a href="#howto-ros-package">Creating a ROS package with nimbro_fsm2</a></h2><p>Create your ROS package as usual (e.g. using <code>catkin_create_pkg NAME nimbro_fsm2</code> or from scratch). Make sure it depends on <code>nimbro_fsm2</code> in your <code>package.xml</code> and <code>CMakeLists.txt</code>.</p><p>You can also create a simple nimbro_fsm2 ROS package using the template script <code>rosrun nimbro_fsm2 create_fsm</code>. <code>rosrun nimbro_fsm2 create_state</code> generates a new state into an existing FSM package.</p><p>We recommend the following directory layout:</p><pre>my_package
+├── CMakeLists.txt
+├── package.xml
+└── src
+    ├── control.cpp # Your &#x27;driver&#x27; object
+    ├── control.h
+    ├── fsm.h # Definition of FSM types
+    └── states
+        ├── drive # Use subdirectories to group states
+        │   ├── around_panel.cpp # A single state definition
+        │   ├── around_panel.h
+        │   ├── search.cpp
+        │   └── search.h
+        ├── valve
+        │   ├── detect_valve.cpp
+        │   └── detect_valve.h
+        ├── wait_start.cpp
+        └── wait_start.h
+</pre><p>Note that we do not follow the usual ROS convention of having a separate <code>include</code> folder &mdash; that would be more confusing when you have a lot of states.</p></section><section id="howto-types"><h2><a href="#howto-types">Defining your FSM &amp; driver types</a></h2><p>For passing information between states, <code>nimbro_fsm2</code> offers two possibilities, each with their own advantages and drawbacks:</p><p><strong>Constructor arguments:</strong> States can pass arbitrary information to successor states via the successor state constructor. This technique is very flexible and does not violate encapsulation. However, <em>dynamic</em> transitions, such as requested through the <code>nimbro_fsm2</code> GUI, cannot provide these arguments. Thus, states requiring constructor arguments are excluded from dynamic transitions. <strong>Driver object:</strong> You can also store arbitrary information in a global driver* object. This is especially suitable for remembering discovered information, like object poses. On the other hand, storing information like this introduces <em>state</em>, which is not represented by the FSM model.</p><p>The entire FSM is templated on your driver class. It is highly useful to introduce typedefs for your code. Usually, this is done in a central <code>fsm.h</code> file (see above):</p><pre class="m-code"><span class="cp">#ifndef MY_FSM_H</span>
+<span class="cp">#define MY_FSM_H</span>
+
+<span class="cp">#include</span> <span class="cpf">&lt;nimbro_fsm2/fsm.h&gt;</span><span class="cp"></span>
+
+<span class="k">class</span> <span class="nc">Control</span><span class="p">;</span>
+<span class="k">using</span> <span class="n">FSM</span> <span class="o">=</span> <span class="n">nimbro_fsm2</span><span class="o">::</span><span class="n">FSM</span><span class="o">&lt;</span><span class="n">Control</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="k">using</span> <span class="n">Transition</span> <span class="o">=</span> <span class="n">FSM</span><span class="o">::</span><span class="n">Transition</span><span class="p">;</span>
+
+<span class="cp">#endif</span></pre><aside class="m-note m-info"><h4>Note</h4><p>The typedef above does not require full definition of your driver class (in this case named <code>Control</code>). A forward declaration like above suffices. Use this feature to keep compilation times low!</p></aside></section><section id="howto-state"><h2><a href="#howto-state">Creating a state</a></h2><p>States are usually defined in their own header and implementation files (see above for file layout). Each state is represented by a custom class, derived from <a href="classnimbro__fsm2_1_1FSM_1_1State.html" class="m-doc">FSM::<wbr />State</a>. A state declaration might look like this:</p><pre class="m-code"><span class="cp">#ifndef MY_FSM_DRIVE_AROUND_PANEL_H</span>
+<span class="cp">#define MY_FSM_DRIVE_AROUND_PANEL_H</span>
+
+<span class="cp">#include</span> <span class="cpf">&quot;../../fsm.h&quot;</span><span class="cp"></span>
+
+<span class="c1">// Forward declaration of other states for transition</span>
+<span class="k">namespace</span> <span class="n">valve</span> <span class="p">{</span> <span class="k">class</span> <span class="nc">DetectValve</span><span class="p">;</span> <span class="p">}</span>
+
+<span class="k">namespace</span> <span class="n">drive</span>
+<span class="p">{</span>
+<span class="c1">// Forward declaration of another state for transition</span>
+<span class="k">class</span> <span class="nc">Search</span><span class="p">;</span>
+
+<span class="k">class</span> <span class="nc">AroundPanel</span> <span class="o">:</span> <span class="k">public</span> <span class="n">FSM</span><span class="o">::</span><span class="n">State</span><span class="o">&lt;</span><span class="n">AroundPanel</span><span class="p">,</span>
+        <span class="n">FSM</span><span class="o">::</span><span class="n">Transitions</span><span class="o">&lt;</span><span class="n">valve</span><span class="o">::</span><span class="n">DetectValve</span><span class="p">,</span> <span class="n">Search</span><span class="o">&gt;&gt;</span>
+<span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+        <span class="n">Transition</span> <span class="n">execute</span><span class="p">(</span><span class="n">Control</span><span class="o">&amp;</span> <span class="n">driver</span><span class="p">)</span> <span class="k">override</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="p">}</span>
+
+<span class="cp">#endif</span></pre><p>As you can see, <a href="classnimbro__fsm2_1_1FSM_1_1State.html" class="m-doc">FSM::<wbr />State</a> has two template parameters. The first one needs to be set to your state class. This helps the compile-time introspection to properly detect your class name, among other benefits. The second parameter specifies the <em>allowed</em> transitions from this state. Finally, we override the <a href="classnimbro__fsm2_1_1FSM_1_1State.html#a5fa4a922446f42a0c533f33ef071c6eb" class="m-doc">FSM::<wbr />State::<wbr />execute()</a> method to tell the FSM what to do once we are in that state.</p><aside class="m-note m-info"><h4>Note</h4><p>Again, for transition specifications, the states only need to be forward-declared. Otherwise, we would have problems with cyclic transitions.</p></aside><p>An implementation for this state might look like this:</p><pre class="m-code"><span class="cp">#include</span> <span class="cpf">&quot;around_panel.h&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;search.h&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;../valve/detect_valve.h&quot;</span><span class="cp"></span>
+
+<span class="k">namespace</span> <span class="n">drive</span>
+<span class="p">{</span>
+
+<span class="n">Transition</span> <span class="n">AroundPanel</span><span class="o">::</span><span class="n">execute</span><span class="p">(</span><span class="n">Control</span><span class="o">&amp;</span> <span class="n">driver</span><span class="p">)</span>
+<span class="p">{</span>
+        <span class="c1">// Are we there?</span>
+        <span class="k">if</span><span class="p">(...</span><span class="n">arrived</span><span class="p">...)</span>
+                <span class="k">return</span> <span class="n">transit</span><span class="o">&lt;</span><span class="n">valve</span><span class="o">::</span><span class="n">DetectValve</span><span class="o">&gt;</span><span class="p">();</span>
+
+        <span class="c1">// No idea where to go?</span>
+        <span class="k">if</span><span class="p">(...</span><span class="n">lost</span><span class="p">...)</span>
+                <span class="k">return</span> <span class="n">transit</span><span class="o">&lt;</span><span class="n">Search</span><span class="o">&gt;</span><span class="p">();</span>
+
+        <span class="n">issue</span> <span class="n">drive</span> <span class="n">commands</span><span class="p">...</span>
+        <span class="k">return</span> <span class="n">stay</span><span class="p">();</span>
+<span class="p">}</span>
+
+<span class="p">}</span></pre><p>The two primitives <a href="classnimbro__fsm2_1_1FSM_1_1State.html#ac10dfa6634105cb144e835160b8478eb" class="m-doc">FSM::<wbr />State::<wbr />transit()</a> and <a href="classnimbro__fsm2_1_1FSM_1_1State.html#aa9fbfa96c49f80aa88db964d30baacaf" class="m-doc">FSM::<wbr />State::<wbr />stay()</a> allow us to control the FSM execution. More advanced states may also override the <a href="classnimbro__fsm2_1_1FSM_1_1State.html#a88dcb9157d0be992f3eb158f4009ffef" class="m-doc">FSM::<wbr />State::<wbr />enter()</a> and <a href="classnimbro__fsm2_1_1FSM_1_1State.html#a3771005c7cb134bd4566b96a42ed9db9" class="m-doc">FSM::<wbr />State::<wbr />leave()</a> methods to perform one-shot work at state entry or exit.</p><aside class="m-note m-danger"><h4>Warning</h4><p>Generally, your state should not perform any work in the constructor. The constructor may, depending on the implementation of other states, be called long before your state is entered. Use <a href="classnimbro__fsm2_1_1FSM_1_1State.html#a88dcb9157d0be992f3eb158f4009ffef" class="m-doc">FSM::<wbr />State::<wbr />enter()</a> for performing work on state entry.</p></aside><aside class="m-note m-info"><h4>Note</h4><p>Avoid any blocking behavior in <a href="classnimbro__fsm2_1_1FSM_1_1State.html#a5fa4a922446f42a0c533f33ef071c6eb" class="m-doc">FSM::<wbr />State::<wbr />execute()</a>, <a href="classnimbro__fsm2_1_1FSM_1_1State.html#a88dcb9157d0be992f3eb158f4009ffef" class="m-doc">FSM::<wbr />State::<wbr />enter()</a>, and <a href="classnimbro__fsm2_1_1FSM_1_1State.html#a3771005c7cb134bd4566b96a42ed9db9" class="m-doc">FSM::<wbr />State::<wbr />leave()</a>. In particular, this means calls to <code>tf::TransformListener::waitForTransform()</code> are not allowed. Instead, use the following idiom:</p><pre class="m-code"><span class="n">tf</span><span class="o">::</span><span class="n">StampedTransform</span> <span class="n">transform</span><span class="p">;</span>
+<span class="k">try</span>
+<span class="p">{</span>
+    <span class="n">driver</span><span class="p">.</span><span class="n">tf</span><span class="p">().</span><span class="n">lookupTransform</span><span class="p">(</span><span class="s">&quot;my_frame&quot;</span><span class="p">,</span> <span class="s">&quot;other_frame&quot;</span><span class="p">,</span> <span class="n">timestamp</span><span class="p">,</span> <span class="n">transform</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="k">catch</span><span class="p">(</span><span class="n">tf</span><span class="o">::</span><span class="n">TransformException</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">ROSFMT_WARN</span><span class="p">(</span><span class="s">&quot;Could not obtain transform: {}&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">.</span><span class="n">what</span><span class="p">());</span>
+    <span class="k">return</span> <span class="nf">stay</span><span class="p">();</span> <span class="c1">// try again next cycle</span>
+<span class="p">}</span>
+
+<span class="p">...</span> <span class="n">use</span> <span class="n">transform</span> <span class="p">...</span></pre></aside></section><section id="howto-control"><h2><a href="#howto-control">Running the FSM</a></h2><p>The only piece missing is the <code>Control</code> class. We start with a very basic definition in <code>control.h</code>:</p><pre class="m-code"><span class="cp">#ifndef CONTROL_H</span>
+<span class="cp">#define CONTROL_H</span>
+
+<span class="cp">#include</span> <span class="cpf">&quot;fsm.h&quot;</span><span class="cp"></span>
+
+<span class="k">class</span> <span class="nc">Control</span>
+<span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+        <span class="n">Control</span><span class="p">();</span>
+
+        <span class="kt">void</span> <span class="nf">work</span><span class="p">();</span>
+<span class="k">private</span><span class="o">:</span>
+        <span class="n">FSM</span> <span class="n">m_fsm</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="cp">#endif</span></pre><p>and the corresponding implementation:</p><pre class="m-code"><span class="cp">#include</span> <span class="cpf">&quot;control.h&quot;</span><span class="cp"></span>
+
+<span class="cp">#include</span> <span class="cpf">&lt;ros/init.h&gt;</span><span class="cp"></span>
+
+<span class="cp">#include</span> <span class="cpf">&quot;drive/around_panel.h&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;drive/search.h&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;valve/detect_valve.h&quot;</span><span class="cp"></span>
+
+<span class="n">Control</span><span class="o">::</span><span class="n">Control</span><span class="p">()</span>
+ <span class="o">:</span> <span class="n">m_fsm</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">)</span> <span class="c1">// give the FSM a reference to the driver object</span>
+<span class="p">{}</span>
+
+<span class="kt">void</span> <span class="n">Control</span><span class="o">::</span><span class="n">work</span><span class="p">()</span>
+<span class="p">{</span>
+        <span class="c1">// Initialize the ROS interface. Here, we have to give a list of the</span>
+        <span class="c1">// possible entry states as template parameters.</span>
+        <span class="n">m_fsm</span><span class="p">.</span><span class="n">initialize</span><span class="o">&lt;</span><span class="n">drive</span><span class="o">::</span><span class="n">AroundPanel</span><span class="o">&gt;</span><span class="p">();</span>
+
+        <span class="c1">// Set the start state</span>
+        <span class="n">m_fsm</span><span class="p">.</span><span class="n">setState</span><span class="o">&lt;</span><span class="n">drive</span><span class="o">::</span><span class="n">AroundPanel</span><span class="o">&gt;</span><span class="p">();</span>
+
+        <span class="c1">// .. and go!</span>
+        <span class="n">ros</span><span class="o">::</span><span class="n">Rate</span> <span class="n">rate</span><span class="p">(</span><span class="n">ros</span><span class="o">::</span><span class="n">Duration</span><span class="p">(</span><span class="mf">1.0</span><span class="p">));</span>
+        <span class="k">while</span><span class="p">(</span><span class="n">ros</span><span class="o">::</span><span class="n">ok</span><span class="p">())</span>
+        <span class="p">{</span>
+                <span class="n">ros</span><span class="o">::</span><span class="n">spinOnce</span><span class="p">();</span>
+                <span class="n">m_fsm</span><span class="p">.</span><span class="n">step</span><span class="p">();</span>
+                <span class="n">rate</span><span class="p">.</span><span class="n">sleep</span><span class="p">();</span>
+        <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">**</span> <span class="n">argv</span><span class="p">)</span>
+<span class="p">{</span>
+        <span class="n">ros</span><span class="o">::</span><span class="n">init</span><span class="p">(</span><span class="n">argc</span><span class="p">,</span> <span class="n">argv</span><span class="p">,</span> <span class="s">&quot;my_fsm&quot;</span><span class="p">);</span>
+
+        <span class="n">Control</span> <span class="n">control</span><span class="p">;</span>
+        <span class="n">control</span><span class="p">.</span><span class="n">work</span><span class="p">();</span>
+
+        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span></pre><aside class="m-note m-info"><h4>Note</h4><p>You can place &quot;global transitions&quot; in your main FSM loop like this:</p><pre class="m-code"><span class="k">while</span><span class="p">(</span><span class="n">ros</span><span class="o">::</span><span class="n">ok</span><span class="p">())</span>
+<span class="p">{</span>
+      <span class="n">ros</span><span class="o">::</span><span class="n">spinOnce</span><span class="p">();</span>
+      <span class="n">m_fsm</span><span class="p">.</span><span class="n">step</span><span class="p">();</span>
+      <span class="n">rate</span><span class="p">.</span><span class="n">sleep</span><span class="p">();</span>
+
+      <span class="k">if</span><span class="p">(...</span> <span class="n">transition</span> <span class="n">condition</span> <span class="p">...)</span>
+         <span class="n">m_fsm</span><span class="p">.</span><span class="n">setState</span><span class="o">&lt;</span><span class="n">OtherState</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="p">}</span></pre><p>However, these transitions will not show up in the transition graph in the GUI (which is beneficial &mdash; these would create arrows from all states to the target state).</p></aside></section><section id="ui"><h2><a href="#ui">Debugging and Visualization</a></h2><p>In state methods, you can use the State::display() method to display additional information to a connected rqt GUI instance. This is best used for monitoring variables:</p><pre class="m-code"><span class="n">Transition</span> <span class="n">MyState</span><span class="o">::</span><span class="n">execute</span><span class="p">(</span><span class="n">Driver</span><span class="o">&amp;</span> <span class="n">driver</span><span class="p">)</span>
+<span class="p">{</span>
+        <span class="n">the_number_of_the_day</span> <span class="o">=</span> <span class="n">my_sensor</span><span class="p">();</span>
+        <span class="n">display</span><span class="p">(</span><span class="s">&quot;the number of the day is: {}&quot;</span><span class="p">,</span> <span class="n">the_number_of_the_day</span><span class="p">);</span>
+        <span class="k">return</span> <span class="nf">stay</span><span class="p">();</span>
+<span class="p">}</span></pre><p>Additionally, you can visualize state kept in your Driver class by providing a <code>std::string Driver::toString() const</code> method:</p><pre class="m-code"><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">Driver</span><span class="o">::</span><span class="n">toString</span><span class="p">()</span> <span class="k">const</span>
+<span class="p">{</span>
+        <span class="k">return</span> <span class="n">fmt</span><span class="o">::</span><span class="n">format</span><span class="p">(</span><span class="s">&quot;Number of crashes: {}&quot;</span><span class="p">,</span> <span class="n">m_numCrashes</span><span class="p">);</span>
+<span class="p">}</span></pre></section>
+      </div>
+    </div>
+  </div>
+</article></main>
+<div class="m-doc-search" id="search">
+  <a href="#!" onclick="return hideSearch()"></a>
+  <div class="m-container">
+    <div class="m-row">
+      <div class="m-col-m-8 m-push-m-2">
+        <div class="m-doc-search-header m-text m-small">
+          <div><span class="m-label m-default">Tab</span> / <span class="m-label m-default">T</span> to search, <span class="m-label m-default">Esc</span> to close</div>
+          <div id="search-symbolcount">&hellip;</div>
+        </div>
+        <div class="m-doc-search-content">
+          <form>
+            <input type="search" name="q" id="search-input" placeholder="Loading &hellip;" disabled="disabled" autofocus="autofocus" autocomplete="off" spellcheck="false" />
+          </form>
+          <noscript class="m-text m-danger m-text-center">Unlike everything else in the docs, the search functionality <em>requires</em> JavaScript.</noscript>
+          <div id="search-help" class="m-text m-dim m-text-center">
+            <p class="m-noindent">Search for symbols, directories, files and pages. You can omit any prefix from the symbol or file path; adding a <code>:</code> or <code>/</code> suffix lists all members of given symbol or directory.</p> <p class="m-noindent">Use <span class="m-label m-dim">&darr;</span> / <span class="m-label m-dim">&uarr;</span> to navigate through the list, <span class="m-label m-dim">Enter</span> to go. <span class="m-label m-dim">Tab</span> autocompletes common prefix, you can copy a link to the result using <span class="m-label m-dim">⌘</span> <span class="m-label m-dim">L</span> while <span class="m-label m-dim">⌘</span> <span class="m-label m-dim">M</span> produces a Markdown link.</p>
+          </div>
+          <div id="search-notfound" class="m-text m-warning m-text-center">Sorry, nothing was found.</div>
+          <ul id="search-results"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="search-v1.js"></script>
+<script src="searchdata-v1.js" async="async"></script>
+<footer><nav>
+  <div class="m-container">
+    <div class="m-row">
+      <div class="m-col-l-10 m-push-l-1">
+        <p>nimbro_fsm2 docs.<br />Generated by <a href="https://doxygen.org/">Doxygen</a> 1.8.17 and <a href="https://mcss.mosra.cz/">m.css</a>.</p>
+      </div>
+    </div>
+  </div>
+</nav></footer>
+</body>
+</html>

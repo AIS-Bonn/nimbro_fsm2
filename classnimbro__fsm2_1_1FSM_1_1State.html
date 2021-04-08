@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>nimbro_fsm2::FSM::State class | nimbro_fsm2 docs</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400i,600,600i%7CSource+Code+Pro:400,400i,600&amp;subset=latin-ext" />
+  <link rel="stylesheet" href="m-dark+documentation.compiled.css" />
+  <link rel="icon" href="favicon-dark.png" type="image/png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#22272e" />
+</head>
+<body>
+<header><nav id="navigation">
+  <div class="m-container">
+    <div class="m-row">
+      <span id="m-navbar-brand" class="m-col-t-8 m-col-m-none m-left-m">
+        <a href="http://nimbroshared.pages.ais.uni-bonn.de/nimbro_fsm2/">nimbro_fsm2</a> <span class="m-breadcrumb">|</span> <a href="index.html" class="m-thin">docs</a>
+      </span>
+      <div class="m-col-t-4 m-hide-m m-text-right m-nopadr">
+        <a href="#search" class="m-doc-search-icon" title="Search" onclick="return showSearch()"><svg style="height: 0.9rem;" viewBox="0 0 16 16">
+          <path id="m-doc-search-icon-path" d="m6 0c-3.31 0-6 2.69-6 6 0 3.31 2.69 6 6 6 1.49 0 2.85-0.541 3.89-1.44-0.0164 0.338 0.147 0.759 0.5 1.15l3.22 3.79c0.552 0.614 1.45 0.665 2 0.115 0.55-0.55 0.499-1.45-0.115-2l-3.79-3.22c-0.392-0.353-0.812-0.515-1.15-0.5 0.895-1.05 1.44-2.41 1.44-3.89 0-3.31-2.69-6-6-6zm0 1.56a4.44 4.44 0 0 1 4.44 4.44 4.44 4.44 0 0 1-4.44 4.44 4.44 4.44 0 0 1-4.44-4.44 4.44 4.44 0 0 1 4.44-4.44z"/>
+        </svg></a>
+        <a id="m-navbar-show" href="#navigation" title="Show navigation"></a>
+        <a id="m-navbar-hide" href="#" title="Hide navigation"></a>
+      </div>
+      <div id="m-navbar-collapse" class="m-col-t-12 m-show-m m-col-m-none m-right-m">
+        <div class="m-row">
+          <ol class="m-col-t-6 m-col-m-none">
+            <li><a href="howto.html">Getting started</a></li>
+            <li><a href="pages.html">Pages</a></li>
+            <li><a href="namespaces.html">Namespaces</a></li>
+          </ol>
+          <ol class="m-col-t-6 m-col-m-none" start="4">
+            <li><a href="annotated.html">Classes</a></li>
+            <li><a href="files.html">Files</a></li>
+            <li class="m-show-m"><a href="#search" class="m-doc-search-icon" title="Search" onclick="return showSearch()"><svg style="height: 0.9rem;" viewBox="0 0 16 16">
+              <use href="#m-doc-search-icon-path" />
+            </svg></a></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav></header>
+<main><article>
+  <div class="m-container m-container-inflatable">
+    <div class="m-row">
+      <div class="m-col-l-10 m-push-l-1">
+        <h1>
+          <div class="m-doc-template">template&lt;class Derived, class TransitionSpec&gt;</div>
+          <span class="m-breadcrumb"><a href="namespacenimbro__fsm2.html">nimbro_fsm2</a>::<wbr/></span><span class="m-breadcrumb"><a href="classnimbro__fsm2_1_1FSM.html">FSM</a>::<wbr/></span>State <span class="m-thin">class</span>
+        </h1>
+        <p>State.</p>
+        <div class="m-block m-default">
+          <h3>Contents</h3>
+          <ul>
+            <li><a href="#FSM-State-Parameters">Template parameters</a></li>
+            <li><a href="#FSM-State-usage">Usage</a></li>
+            <li>
+              Reference
+              <ul>
+                <li><a href="#base-classes">Base classes</a></li>
+                <li><a href="#pub-types">Public types</a></li>
+                <li><a href="#information">Information</a></li>
+                <li><a href="#logging-visualization">Logging & visualization</a></li>
+                <li><a href="#actions">Actions</a></li>
+                <li><a href="#hooks">Hooks</a></li>
+                <li><a href="#io">I/O</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+<p>Represents a single state in your FSM.</p><section id="FSM-State-Parameters"><h2><a href="#FSM-State-Parameters">Template parameters</a></h2><p>nimbro_fsm2 heavily uses compile-time verification and introspection. For this reason, you need to specify two template parameters:</p><ul><li><code>Derived:</code> This should be your state class.</li><li><code>TransitionSpec:</code> Pass in <a href="classnimbro__fsm2_1_1FSM_1_1Transitions.html" class="m-doc">FSM::<wbr />Transitions</a> with the set of allowed transitions from this state.</li></ul></section><section id="FSM-State-usage"><h2><a href="#FSM-State-usage">Usage</a></h2><p>Common usage is to declare states in their own header file:</p><pre class="m-code"><span class="k">class</span> <span class="nc">Idle</span><span class="p">;</span>
+<span class="k">class</span> <span class="nc">Crashed</span><span class="p">;</span>
+
+<span class="k">class</span> <span class="nc">Driving</span> <span class="o">:</span> <span class="k">public</span> <span class="n">FSM</span><span class="o">::</span><span class="n">State</span><span class="o">&lt;</span><span class="n">Driving</span><span class="p">,</span> <span class="n">FSM</span><span class="o">::</span><span class="n">Transitions</span><span class="o">&lt;</span><span class="n">Idle</span><span class="p">,</span> <span class="n">Crashed</span><span class="o">&gt;&gt;</span>
+<span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+        <span class="kt">void</span> <span class="n">enter</span><span class="p">()</span> <span class="k">override</span><span class="p">;</span>
+        <span class="n">Transition</span> <span class="nf">execute</span><span class="p">()</span> <span class="k">override</span><span class="p">;</span>
+<span class="k">private</span><span class="o">:</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">mt19937</span> <span class="n">m_randomGenerator</span><span class="p">;</span>
+        <span class="kt">int</span> <span class="n">m_count</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">};</span></pre></section>
+        <section id="base-classes">
+          <h2><a href="#base-classes">Base classes</a></h2>
+          <dl class="m-doc">
+            <dt>
+              class <a href="classnimbro__fsm2_1_1FSM_1_1StateBase.html" class="m-doc">nimbro_fsm2::FSM&lt;DriverClass&gt;::StateBase</a>
+            </dt>
+            <dd>Abstract base class for states.</dd>
+          </dl>
+        </section>
+        <section id="pub-types">
+          <h2><a href="#pub-types">Public types</a></h2>
+          <dl class="m-doc">
+            <dt id="a4628556f8eb2cbd8cd07eb40348d14a3">
+              using <a href="#a4628556f8eb2cbd8cd07eb40348d14a3" class="m-doc-self">Transitions</a> = TransitionSpec
+            </dt>
+            <dd>Transitions type for compile-time lookup.</dd>
+          </dl>
+        </section>
+        <section id="information">
+          <h2><a href="#information">Information</a></h2>
+          <dl class="m-doc">
+            <dt>
+              static auto <a href="#a56240433c2ab667562fa8f8cb97c8754" class="m-doc">Name</a> <span class="m-label m-flat m-primary">constexpr</span>
+            </dt>
+            <dd>State name.</dd>
+            <dt>
+              <span class="m-doc-wrap-bumper">auto <a href="#a8038851a5acc587c9bd520563931f7f2" class="m-doc">elapsedTime</a>(</span><span class="m-doc-wrap">) const -&gt; ros::Duration</span>
+            </dt>
+            <dd>Elapsed time.</dd>
+          </dl>
+        </section>
+        <section id="logging-visualization">
+          <h2><a href="#logging-visualization">Logging & visualization</a></h2>
+          <dl class="m-doc">
+            <dt>
+              <div class="m-doc-template">template&lt;class ... Args&gt;</div>
+              <span class="m-doc-wrap-bumper">void <a href="#a294af449cf7b3b7c8084777f43011b55" class="m-doc">display</a>(</span><span class="m-doc-wrap">const std::string&amp; formatString,
+              const Args&amp;... args)</span>
+            </dt>
+            <dd>Display values during state execution.</dd>
+          </dl>
+        </section>
+        <section id="actions">
+          <h2><a href="#actions">Actions</a></h2>
+          <dl class="m-doc">
+            <dt>
+              <div class="m-doc-template">template&lt;class T, class ... Args&gt;</div>
+              <span class="m-doc-wrap-bumper">auto <a href="#ac10dfa6634105cb144e835160b8478eb" class="m-doc">transit</a>(</span><span class="m-doc-wrap">Args &amp;&amp; ... args) -&gt; <a href="classnimbro__fsm2_1_1FSM_1_1Transition.html" class="m-doc">Transition</a></span>
+            </dt>
+            <dd>Perform state transition.</dd>
+            <dt>
+              <span class="m-doc-wrap-bumper">auto <a href="#aa9fbfa96c49f80aa88db964d30baacaf" class="m-doc">stay</a>(</span><span class="m-doc-wrap">) -&gt; <a href="classnimbro__fsm2_1_1FSM_1_1Transition.html" class="m-doc">Transition</a></span>
+            </dt>
+            <dd>Stay in this state.</dd>
+          </dl>
+        </section>
+        <section id="hooks">
+          <h2><a href="#hooks">Hooks</a></h2>
+          <dl class="m-doc">
+            <dt id="a88dcb9157d0be992f3eb158f4009ffef">
+              <span class="m-doc-wrap-bumper">void <a href="#a88dcb9157d0be992f3eb158f4009ffef" class="m-doc-self">enter</a>(</span><span class="m-doc-wrap">) <span class="m-label m-flat m-warning">virtual</span></span>
+            </dt>
+            <dd>Called after entering the state.</dd>
+            <dt id="a3771005c7cb134bd4566b96a42ed9db9">
+              <span class="m-doc-wrap-bumper">void <a href="#a3771005c7cb134bd4566b96a42ed9db9" class="m-doc-self">leave</a>(</span><span class="m-doc-wrap">) <span class="m-label m-flat m-warning">virtual</span></span>
+            </dt>
+            <dd>Called before leaving the state.</dd>
+            <dt>
+              <span class="m-doc-wrap-bumper">auto <a href="#a5fa4a922446f42a0c533f33ef071c6eb" class="m-doc">execute</a>(</span><span class="m-doc-wrap">) -&gt; <a href="classnimbro__fsm2_1_1FSM_1_1Transition.html" class="m-doc">Transition</a> <span class="m-label m-flat m-warning">pure virtual</span></span>
+            </dt>
+            <dd>State execution.</dd>
+          </dl>
+        </section>
+        <section id="io">
+          <h2><a href="#io">I/O</a></h2>
+          <dl class="m-doc">
+            <dt>
+              <span class="m-doc-wrap-bumper">auto <a href="#ab62509b419578b8527ac26e22a0aad55" class="m-doc">driver</a>(</span><span class="m-doc-wrap">) -&gt; DriverClass&amp;</span>
+            </dt>
+            <dd>Obtain a reference to the global driver object.</dd>
+          </dl>
+        </section>
+        <section>
+          <h2>Function documentation</h2>
+          <section class="m-doc-details" id="a8038851a5acc587c9bd520563931f7f2"><div>
+            <h3>
+              <div class="m-doc-template">
+                template&lt;class Derived, class TransitionSpec&gt;
+              </div>
+              <span class="m-doc-wrap-bumper">ros::Duration nimbro_fsm2::<wbr />FSM::<wbr />State&lt;Derived, TransitionSpec&gt;::<wbr /></span><span class="m-doc-wrap"><span class="m-doc-wrap-bumper"><a href="#a8038851a5acc587c9bd520563931f7f2" class="m-doc-self">elapsedTime</a>(</span><span class="m-doc-wrap">) const</span></span>
+            </h3>
+            <p>Elapsed time.</p>
+<p>This returns the elapsed time since the state was entered (i.e. since <a href="classnimbro__fsm2_1_1FSM_1_1State.html#a88dcb9157d0be992f3eb158f4009ffef" class="m-doc">State::<wbr />enter</a> was called).</p>
+          </div></section>
+          <section class="m-doc-details" id="a294af449cf7b3b7c8084777f43011b55"><div>
+            <h3>
+              <div class="m-doc-template">
+                template&lt;class Derived, class TransitionSpec&gt;
+                template&lt;class ... Args&gt;
+              </div>
+              <span class="m-doc-wrap-bumper">void nimbro_fsm2::<wbr />FSM::<wbr />State&lt;Derived, TransitionSpec&gt;::<wbr /></span><span class="m-doc-wrap"><span class="m-doc-wrap-bumper"><a href="#a294af449cf7b3b7c8084777f43011b55" class="m-doc-self">display</a>(</span><span class="m-doc-wrap">const std::string&amp; formatString,
+              const Args&amp;... args)</span></span>
+            </h3>
+            <p>Display values during state execution.</p>
+<p>With this method you can visualize high-frequency information from your state execution method. It uses the <code>fmt</code> syntax for format strings. All emitted display strings for one FSM cycle are aggregated and displayed to the user in the <code>nimbro_fsm2</code> GUI. Additionally, the last collected messages are displayed at state exit, so that one can more easily reason about the conditions that led to the transition. Example:</p><pre class="m-code">        <span class="n">std</span><span class="o">::</span><span class="n">uniform_real_distribution</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span> <span class="n">crashDistribution</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">);</span>
+        <span class="kt">float</span> <span class="n">crashValue</span> <span class="o">=</span> <span class="n">crashDistribution</span><span class="p">(</span><span class="n">m_randomGenerator</span><span class="p">);</span>
+        <span class="n">display</span><span class="p">(</span><span class="s">&quot;crashValue: {}&quot;</span><span class="p">,</span> <span class="n">crashValue</span><span class="p">);</span></pre>
+          </div></section>
+          <section class="m-doc-details" id="ac10dfa6634105cb144e835160b8478eb"><div>
+            <h3>
+              <div class="m-doc-template">
+                template&lt;class Derived, class TransitionSpec&gt;
+                template&lt;class T, class ... Args&gt;
+              </div>
+              <span class="m-doc-wrap-bumper"><a href="classnimbro__fsm2_1_1FSM_1_1Transition.html" class="m-doc">Transition</a> nimbro_fsm2::<wbr />FSM::<wbr />State&lt;Derived, TransitionSpec&gt;::<wbr /></span><span class="m-doc-wrap"><span class="m-doc-wrap-bumper"><a href="#ac10dfa6634105cb144e835160b8478eb" class="m-doc-self">transit</a>(</span><span class="m-doc-wrap">Args &amp;&amp; ... args)</span></span>
+            </h3>
+            <p>Perform state transition.</p>
+<p>This method is used to perform a state transition. The resulting <a href="classnimbro__fsm2_1_1FSM_1_1Transition.html" class="m-doc">Transition</a> should be returned from the <a href="classnimbro__fsm2_1_1FSM_1_1State.html#a5fa4a922446f42a0c533f33ef071c6eb" class="m-doc">State::<wbr />execute</a> method.</p><p>Example:</p><pre class="m-code"><span class="n">Transition</span> <span class="n">MyState</span><span class="o">::</span><span class="n">execute</span><span class="p">(</span><span class="n">Driver</span><span class="o">&amp;</span> <span class="n">driver</span><span class="p">)</span>
+<span class="p">{</span> <span class="k">return</span> <span class="n">transit</span><span class="o">&lt;</span><span class="n">NextState</span><span class="o">&gt;</span><span class="p">();</span> <span class="p">}</span></pre><p>Calling <a href="classnimbro__fsm2_1_1FSM_1_1State.html#ac10dfa6634105cb144e835160b8478eb" class="m-doc">transit</a> with a state not mentioned in your TransitionSpec will result in a compilation error.</p><p>Any arguments are forwarded to the state constructor.</p>
+          </div></section>
+          <section class="m-doc-details" id="aa9fbfa96c49f80aa88db964d30baacaf"><div>
+            <h3>
+              <div class="m-doc-template">
+                template&lt;class Derived, class TransitionSpec&gt;
+              </div>
+              <span class="m-doc-wrap-bumper"><a href="classnimbro__fsm2_1_1FSM_1_1Transition.html" class="m-doc">Transition</a> nimbro_fsm2::<wbr />FSM::<wbr />State&lt;Derived, TransitionSpec&gt;::<wbr /></span><span class="m-doc-wrap"><span class="m-doc-wrap-bumper"><a href="#aa9fbfa96c49f80aa88db964d30baacaf" class="m-doc-self">stay</a>(</span><span class="m-doc-wrap">)</span></span>
+            </h3>
+            <p>Stay in this state.</p>
+<p>This method is used to stay in the current state. The resulting <a href="classnimbro__fsm2_1_1FSM_1_1Transition.html" class="m-doc">Transition</a> should be returned from the <a href="classnimbro__fsm2_1_1FSM_1_1State.html#a5fa4a922446f42a0c533f33ef071c6eb" class="m-doc">State::<wbr />execute</a> method.</p><p>Example:</p><pre class="m-code"><span class="n">Transition</span> <span class="n">MyState</span><span class="o">::</span><span class="n">execute</span><span class="p">(</span><span class="n">Driver</span><span class="o">&amp;</span> <span class="n">driver</span><span class="p">)</span>
+<span class="p">{</span> <span class="k">return</span> <span class="n">stay</span><span class="p">();</span> <span class="p">}</span></pre>
+          </div></section>
+          <section class="m-doc-details" id="a5fa4a922446f42a0c533f33ef071c6eb"><div>
+            <h3>
+              <div class="m-doc-template">
+                template&lt;class Derived, class TransitionSpec&gt;
+              </div>
+              <span class="m-doc-wrap-bumper"><a href="classnimbro__fsm2_1_1FSM_1_1Transition.html" class="m-doc">Transition</a> nimbro_fsm2::<wbr />FSM::<wbr />State&lt;Derived, TransitionSpec&gt;::<wbr /></span><span class="m-doc-wrap"><span class="m-doc-wrap-bumper"><a href="#a5fa4a922446f42a0c533f33ef071c6eb" class="m-doc-self">execute</a>(</span><span class="m-doc-wrap">) <span class="m-label m-warning">pure virtual</span></span></span>
+            </h3>
+            <p>State execution.</p>
+<p>You have to implement this function. It is called once per FSM step while this state is active. On each iteration, the method either returns <a href="classnimbro__fsm2_1_1FSM_1_1State.html#aa9fbfa96c49f80aa88db964d30baacaf" class="m-doc">stay</a> to stay in this state, or uses <a href="classnimbro__fsm2_1_1FSM_1_1State.html#ac10dfa6634105cb144e835160b8478eb" class="m-doc">transit</a> to cause a transition to another state:</p><pre class="m-code"><span class="n">Transition</span> <span class="n">Driving</span><span class="o">::</span><span class="n">execute</span><span class="p">()</span>
+<span class="p">{</span>
+        <span class="c1">//[display]</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">uniform_real_distribution</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span> <span class="n">crashDistribution</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">);</span>
+        <span class="kt">float</span> <span class="n">crashValue</span> <span class="o">=</span> <span class="n">crashDistribution</span><span class="p">(</span><span class="n">m_randomGenerator</span><span class="p">);</span>
+        <span class="n">display</span><span class="p">(</span><span class="s">&quot;crashValue: {}&quot;</span><span class="p">,</span> <span class="n">crashValue</span><span class="p">);</span>
+        <span class="c1">//[display]</span>
+
+        <span class="k">if</span><span class="p">(</span><span class="n">crashValue</span> <span class="o">&gt;</span> <span class="mf">0.8</span><span class="p">)</span>
+        <span class="p">{</span>
+                <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Didn&#39;t see that tree coming :-(</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+                <span class="k">return</span> <span class="n">transit</span><span class="o">&lt;</span><span class="n">Crashed</span><span class="o">&gt;</span><span class="p">();</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span><span class="p">(</span><span class="o">++</span><span class="n">m_count</span> <span class="o">==</span> <span class="mi">10</span><span class="p">)</span>
+        <span class="p">{</span>
+                <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Phew, made it!</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
+                <span class="k">return</span> <span class="n">transit</span><span class="o">&lt;</span><span class="n">Idle</span><span class="o">&gt;</span><span class="p">();</span>
+        <span class="p">}</span>
+
+        <span class="c1">// Driving along</span>
+        <span class="n">driver</span><span class="p">().</span><span class="n">drive</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">);</span>
+        <span class="k">return</span> <span class="nf">stay</span><span class="p">();</span>
+<span class="p">}</span></pre>
+          </div></section>
+          <section class="m-doc-details" id="ab62509b419578b8527ac26e22a0aad55"><div>
+            <h3>
+              <div class="m-doc-template">
+                template&lt;class Derived, class TransitionSpec&gt;
+              </div>
+              <span class="m-doc-wrap-bumper">DriverClass&amp; nimbro_fsm2::<wbr />FSM::<wbr />State&lt;Derived, TransitionSpec&gt;::<wbr /></span><span class="m-doc-wrap"><span class="m-doc-wrap-bumper"><a href="#ab62509b419578b8527ac26e22a0aad55" class="m-doc-self">driver</a>(</span><span class="m-doc-wrap">)</span></span>
+            </h3>
+            <p>Obtain a reference to the global driver object.</p>
+<p>You can use this function to access the driver object, which may be used to store information (e.g. discovered objects/poses/etc).</p><aside class="m-note m-danger"><h4>Warning</h4><p>You cannot use this function in the constructor of your state! The reference is set up <em>after</em> creation of the state object.</p></aside>
+          </div></section>
+        </section>
+        <section>
+          <h2>Variable documentation</h2>
+          <section class="m-doc-details" id="a56240433c2ab667562fa8f8cb97c8754"><div>
+            <h3>
+              <div class="m-doc-template">
+                template&lt;class Derived, class TransitionSpec&gt;
+              </div>
+              static auto nimbro_fsm2::<wbr />FSM::<wbr />State&lt;Derived, TransitionSpec&gt;::<wbr /><a href="#a56240433c2ab667562fa8f8cb97c8754" class="m-doc-self">Name</a> <span class="m-label m-primary">constexpr</span>
+            </h3>
+            <p>State name.</p>
+<p>This state name is extracted at compile time and stored either as <code>std::string_view</code> (GCC) or a custom static string type (clang). You can use <code>std::string_view{x}</code> to get a runtime string.</p><pre class="m-code">        <span class="n">ROSFMT_INFO</span><span class="p">(</span><span class="s">&quot;Starting in state: {}&quot;</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">string_view</span><span class="p">{</span><span class="n">my_fsm</span><span class="o">::</span><span class="n">Idle</span><span class="o">::</span><span class="n">Name</span><span class="p">});</span></pre>
+          </div></section>
+        </section>
+      </div>
+    </div>
+  </div>
+</article></main>
+<div class="m-doc-search" id="search">
+  <a href="#!" onclick="return hideSearch()"></a>
+  <div class="m-container">
+    <div class="m-row">
+      <div class="m-col-m-8 m-push-m-2">
+        <div class="m-doc-search-header m-text m-small">
+          <div><span class="m-label m-default">Tab</span> / <span class="m-label m-default">T</span> to search, <span class="m-label m-default">Esc</span> to close</div>
+          <div id="search-symbolcount">&hellip;</div>
+        </div>
+        <div class="m-doc-search-content">
+          <form>
+            <input type="search" name="q" id="search-input" placeholder="Loading &hellip;" disabled="disabled" autofocus="autofocus" autocomplete="off" spellcheck="false" />
+          </form>
+          <noscript class="m-text m-danger m-text-center">Unlike everything else in the docs, the search functionality <em>requires</em> JavaScript.</noscript>
+          <div id="search-help" class="m-text m-dim m-text-center">
+            <p class="m-noindent">Search for symbols, directories, files and pages. You can omit any prefix from the symbol or file path; adding a <code>:</code> or <code>/</code> suffix lists all members of given symbol or directory.</p> <p class="m-noindent">Use <span class="m-label m-dim">&darr;</span> / <span class="m-label m-dim">&uarr;</span> to navigate through the list, <span class="m-label m-dim">Enter</span> to go. <span class="m-label m-dim">Tab</span> autocompletes common prefix, you can copy a link to the result using <span class="m-label m-dim">⌘</span> <span class="m-label m-dim">L</span> while <span class="m-label m-dim">⌘</span> <span class="m-label m-dim">M</span> produces a Markdown link.</p>
+          </div>
+          <div id="search-notfound" class="m-text m-warning m-text-center">Sorry, nothing was found.</div>
+          <ul id="search-results"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="search-v1.js"></script>
+<script src="searchdata-v1.js" async="async"></script>
+<footer><nav>
+  <div class="m-container">
+    <div class="m-row">
+      <div class="m-col-l-10 m-push-l-1">
+        <p>nimbro_fsm2 docs.<br />Generated by <a href="https://doxygen.org/">Doxygen</a> 1.8.17 and <a href="https://mcss.mosra.cz/">m.css</a>.</p>
+      </div>
+    </div>
+  </div>
+</nav></footer>
+</body>
+</html>

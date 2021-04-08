@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>nimbro_fsm2::FSM class | nimbro_fsm2 docs</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,400i,600,600i%7CSource+Code+Pro:400,400i,600&amp;subset=latin-ext" />
+  <link rel="stylesheet" href="m-dark+documentation.compiled.css" />
+  <link rel="icon" href="favicon-dark.png" type="image/png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#22272e" />
+</head>
+<body>
+<header><nav id="navigation">
+  <div class="m-container">
+    <div class="m-row">
+      <span id="m-navbar-brand" class="m-col-t-8 m-col-m-none m-left-m">
+        <a href="http://nimbroshared.pages.ais.uni-bonn.de/nimbro_fsm2/">nimbro_fsm2</a> <span class="m-breadcrumb">|</span> <a href="index.html" class="m-thin">docs</a>
+      </span>
+      <div class="m-col-t-4 m-hide-m m-text-right m-nopadr">
+        <a href="#search" class="m-doc-search-icon" title="Search" onclick="return showSearch()"><svg style="height: 0.9rem;" viewBox="0 0 16 16">
+          <path id="m-doc-search-icon-path" d="m6 0c-3.31 0-6 2.69-6 6 0 3.31 2.69 6 6 6 1.49 0 2.85-0.541 3.89-1.44-0.0164 0.338 0.147 0.759 0.5 1.15l3.22 3.79c0.552 0.614 1.45 0.665 2 0.115 0.55-0.55 0.499-1.45-0.115-2l-3.79-3.22c-0.392-0.353-0.812-0.515-1.15-0.5 0.895-1.05 1.44-2.41 1.44-3.89 0-3.31-2.69-6-6-6zm0 1.56a4.44 4.44 0 0 1 4.44 4.44 4.44 4.44 0 0 1-4.44 4.44 4.44 4.44 0 0 1-4.44-4.44 4.44 4.44 0 0 1 4.44-4.44z"/>
+        </svg></a>
+        <a id="m-navbar-show" href="#navigation" title="Show navigation"></a>
+        <a id="m-navbar-hide" href="#" title="Hide navigation"></a>
+      </div>
+      <div id="m-navbar-collapse" class="m-col-t-12 m-show-m m-col-m-none m-right-m">
+        <div class="m-row">
+          <ol class="m-col-t-6 m-col-m-none">
+            <li><a href="howto.html">Getting started</a></li>
+            <li><a href="pages.html">Pages</a></li>
+            <li><a href="namespaces.html">Namespaces</a></li>
+          </ol>
+          <ol class="m-col-t-6 m-col-m-none" start="4">
+            <li><a href="annotated.html">Classes</a></li>
+            <li><a href="files.html">Files</a></li>
+            <li class="m-show-m"><a href="#search" class="m-doc-search-icon" title="Search" onclick="return showSearch()"><svg style="height: 0.9rem;" viewBox="0 0 16 16">
+              <use href="#m-doc-search-icon-path" />
+            </svg></a></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav></header>
+<main><article>
+  <div class="m-container m-container-inflatable">
+    <div class="m-row">
+      <div class="m-col-l-10 m-push-l-1">
+        <h1>
+          <div class="m-doc-template">template&lt;class DriverClass&gt;</div>
+          <span class="m-breadcrumb"><a href="namespacenimbro__fsm2.html">nimbro_fsm2</a>::<wbr/></span>FSM <span class="m-thin">class</span>
+        </h1>
+        <p>Finite State Machine.</p>
+        <div class="m-block m-default">
+          <h3>Contents</h3>
+          <ul>
+            <li>
+              Reference
+              <ul>
+                <li><a href="#pub-types">Public types</a></li>
+                <li><a href="#typeless-methods">Constructors, destructors, conversion operators</a></li>
+                <li><a href="#pub-methods">Public functions</a></li>
+                <li><a href="#pro-methods">Protected functions</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+<p>This class defines the necessary types and also contains the runtime needed for Finite State Machines. It is templated on a <code>DriverClass</code> type, which can be used by the FSM states to interact with the outside world.</p><p>The FSM offers a ROS interface for introspection (information about the current state and state history), as well as control (switching to a new state).</p><p>The <code>DriverClass</code> can offer a <code>std::string DriverClass::toString() const</code> method. In that case, the information given by this method is reported in the ROS status message for display in the GUI.</p>
+        <section id="pub-types">
+          <h2><a href="#pub-types">Public types</a></h2>
+          <dl class="m-doc">
+            <dt>
+              <div class="m-doc-template">template&lt;class Derived, class TransitionSpec&gt;</div>
+              class <a href="classnimbro__fsm2_1_1FSM_1_1State.html" class="m-doc">State</a>
+            </dt>
+            <dd>State.</dd>
+            <dt>
+              class <a href="classnimbro__fsm2_1_1FSM_1_1StateBase.html" class="m-doc">StateBase</a>
+            </dt>
+            <dd>Abstract base class for states.</dd>
+            <dt>
+              class <a href="classnimbro__fsm2_1_1FSM_1_1Transition.html" class="m-doc">Transition</a>
+            </dt>
+            <dd>Runtime transition.</dd>
+            <dt>
+              <div class="m-doc-template">template&lt;class ... SuccessorStates&gt;</div>
+              class <a href="classnimbro__fsm2_1_1FSM_1_1Transitions.html" class="m-doc">Transitions</a>
+            </dt>
+            <dd>Transitions specifications.</dd>
+          </dl>
+        </section>
+        <section id="typeless-methods">
+          <h2><a href="#typeless-methods">Constructors, destructors, conversion operators</a></h2>
+          <dl class="m-doc">
+            <dt>
+              <span class="m-doc-wrap-bumper"><a href="#a7568c30ef891756c151d7b14a87b4087" class="m-doc">FSM</a>(</span><span class="m-doc-wrap">DriverClass&amp; driver,
+              const ros::NodeHandle&amp; nh) <span class="m-label m-flat m-info">explicit</span> </span>
+            </dt>
+            <dd>Constructor.</dd>
+            <dt>
+              <span class="m-doc-wrap-bumper"><a href="#a0d9761f2c67a15134f30e7dac31f0286" class="m-doc">FSM</a>(</span><span class="m-doc-wrap">DriverClass&amp; driver) <span class="m-label m-flat m-info">explicit</span> </span>
+            </dt>
+            <dd>Constructor.</dd>
+          </dl>
+        </section>
+        <section id="pub-methods">
+          <h2><a href="#pub-methods">Public functions</a></h2>
+          <dl class="m-doc">
+            <dt>
+              <div class="m-doc-template">template&lt;class ... StartStates&gt;</div>
+              <span class="m-doc-wrap-bumper">void <a href="#a1286cf22a68dea59b1bf4800ac973884" class="m-doc">initialize</a>(</span><span class="m-doc-wrap">)</span>
+            </dt>
+            <dd>Initialize the type system.</dd>
+            <dt>
+              <div class="m-doc-template">template&lt;class <a href="classnimbro__fsm2_1_1FSM_1_1State.html" class="m-doc">State</a>, class ... Args&gt;</div>
+              <span class="m-doc-wrap-bumper">void <a href="#ac5f535cffc8453ac4b525d0f0b13ece0" class="m-doc">setState</a>(</span><span class="m-doc-wrap">Args &amp;&amp; ... args)</span>
+            </dt>
+            <dd>Set FSM state.</dd>
+            <dt>
+              <span class="m-doc-wrap-bumper">void <a href="#af858327e0c88aac329b6a207ed611448" class="m-doc">step</a>(</span><span class="m-doc-wrap">)</span>
+            </dt>
+            <dd>Step the FSM.</dd>
+            <dt>
+              <span class="m-doc-wrap-bumper">auto <a href="#adf3509558e971d118b4481df867db374" class="m-doc">currentStateName</a>(</span><span class="m-doc-wrap">) const -&gt; std::string</span>
+            </dt>
+            <dd>Retrieve class name of currently active state.</dd>
+            <dt>
+              <span class="m-doc-wrap-bumper">auto <a href="#a787d270ada36aab66fffc12099ddcec9" class="m-doc">stateInfo</a>(</span><span class="m-doc-wrap">) const -&gt; const Info&amp;</span>
+            </dt>
+            <dd>Information on states &amp; transitions.</dd>
+          </dl>
+        </section>
+        <section id="pro-methods">
+          <h2><a href="#pro-methods">Protected functions</a></h2>
+          <dl class="m-doc">
+            <dt>
+              <span class="m-doc-wrap-bumper">auto <a href="#a3221e055baa4f5fb69b3f486c58ecc44" class="m-doc">isTransitionAllowed</a>(</span><span class="m-doc-wrap">] const std::string_view&amp; newState) -&gt; bool <span class="m-label m-flat m-warning">virtual</span></span>
+            </dt>
+            <dd>Transition checking hook.</dd>
+          </dl>
+        </section>
+        <section>
+          <h2>Function documentation</h2>
+          <section class="m-doc-details" id="a7568c30ef891756c151d7b14a87b4087"><div>
+            <h3>
+              <div class="m-doc-template">
+                template&lt;class DriverClass&gt;
+              </div>
+              <span class="m-doc-wrap-bumper"> nimbro_fsm2::<wbr />FSM&lt;DriverClass&gt;::<wbr /></span><span class="m-doc-wrap"><span class="m-doc-wrap-bumper"><a href="#a7568c30ef891756c151d7b14a87b4087" class="m-doc-self">FSM</a>(</span><span class="m-doc-wrap">DriverClass&amp; driver,
+              const ros::NodeHandle&amp; nh) <span class="m-label m-info">explicit</span> </span></span>
+            </h3>
+            <p>Constructor.</p>
+            <table class="m-table m-fullwidth m-flat">
+              <thead>
+                <tr><th colspan="2">Parameters</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="width: 1%">driver</td>
+                  <td>Reference to an instance of your driver class</td>
+                </tr>
+                <tr>
+                  <td>nh</td>
+                  <td>ROS NodeHandle for the ROS API.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div></section>
+          <section class="m-doc-details" id="a0d9761f2c67a15134f30e7dac31f0286"><div>
+            <h3>
+              <div class="m-doc-template">
+                template&lt;class DriverClass&gt;
+              </div>
+              <span class="m-doc-wrap-bumper"> nimbro_fsm2::<wbr />FSM&lt;DriverClass&gt;::<wbr /></span><span class="m-doc-wrap"><span class="m-doc-wrap-bumper"><a href="#a0d9761f2c67a15134f30e7dac31f0286" class="m-doc-self">FSM</a>(</span><span class="m-doc-wrap">DriverClass&amp; driver) <span class="m-label m-info">explicit</span> </span></span>
+            </h3>
+            <p>Constructor.</p>
+            <table class="m-table m-fullwidth m-flat">
+              <thead>
+                <tr><th colspan="2">Parameters</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="width: 1%">driver</td>
+                  <td>Reference to an instance of your driver class</td>
+                </tr>
+              </tbody>
+            </table>
+          </div></section>
+          <section class="m-doc-details" id="a1286cf22a68dea59b1bf4800ac973884"><div>
+            <h3>
+              <div class="m-doc-template">
+                template&lt;class DriverClass&gt;
+                template&lt;class ... StartStates&gt;
+              </div>
+              <span class="m-doc-wrap-bumper">void nimbro_fsm2::<wbr />FSM&lt;DriverClass&gt;::<wbr /></span><span class="m-doc-wrap"><span class="m-doc-wrap-bumper"><a href="#a1286cf22a68dea59b1bf4800ac973884" class="m-doc-self">initialize</a>(</span><span class="m-doc-wrap">)</span></span>
+            </h3>
+            <p>Initialize the type system.</p>
+<p>This call is used to initialize the compile-time introspection of your states. It should be called with all possible entry states as template parameters.</p><p>Example:</p><pre class="m-code">        <span class="n">fsm</span><span class="p">.</span><span class="n">initialize</span><span class="o">&lt;</span><span class="n">my_fsm</span><span class="o">::</span><span class="n">Idle</span><span class="o">&gt;</span><span class="p">();</span></pre><aside class="m-note m-info"><h4>Note</h4><p>All reachable states need to be fully declared (i.e. not only forward-declared) for this to work.</p></aside>
+          </div></section>
+          <section class="m-doc-details" id="ac5f535cffc8453ac4b525d0f0b13ece0"><div>
+            <h3>
+              <div class="m-doc-template">
+                template&lt;class DriverClass&gt;
+                template&lt;class <a href="classnimbro__fsm2_1_1FSM_1_1State.html" class="m-doc">State</a>, class ... Args&gt;
+              </div>
+              <span class="m-doc-wrap-bumper">void nimbro_fsm2::<wbr />FSM&lt;DriverClass&gt;::<wbr /></span><span class="m-doc-wrap"><span class="m-doc-wrap-bumper"><a href="#ac5f535cffc8453ac4b525d0f0b13ece0" class="m-doc-self">setState</a>(</span><span class="m-doc-wrap">Args &amp;&amp; ... args)</span></span>
+            </h3>
+            <p>Set FSM state.</p>
+<p>This method is used to enter a specific state, continuing execution from there. Any arguments are forwarded to the constructor of the state.</p><p>Example:</p><pre class="m-code">        <span class="n">fsm</span><span class="p">.</span><span class="n">setState</span><span class="o">&lt;</span><span class="n">my_fsm</span><span class="o">::</span><span class="n">Idle</span><span class="o">&gt;</span><span class="p">();</span></pre>
+          </div></section>
+          <section class="m-doc-details" id="af858327e0c88aac329b6a207ed611448"><div>
+            <h3>
+              <div class="m-doc-template">
+                template&lt;class DriverClass&gt;
+              </div>
+              <span class="m-doc-wrap-bumper">void nimbro_fsm2::<wbr />FSM&lt;DriverClass&gt;::<wbr /></span><span class="m-doc-wrap"><span class="m-doc-wrap-bumper"><a href="#af858327e0c88aac329b6a207ed611448" class="m-doc-self">step</a>(</span><span class="m-doc-wrap">)</span></span>
+            </h3>
+            <p>Step the FSM.</p>
+<p>This will call the <a href="classnimbro__fsm2_1_1FSM_1_1State.html#a5fa4a922446f42a0c533f33ef071c6eb" class="m-doc">State::<wbr />execute()</a> method on the currently active state and handle the returned Transition object appropriately, either staying in the same or transitioning to another state.</p><p>This method will also publish a ROS message on the <code>status</code> topic with the current FSM state and the state history.</p>
+          </div></section>
+          <section class="m-doc-details" id="adf3509558e971d118b4481df867db374"><div>
+            <h3>
+              <div class="m-doc-template">
+                template&lt;class DriverClass&gt;
+              </div>
+              <span class="m-doc-wrap-bumper">std::string nimbro_fsm2::<wbr />FSM&lt;DriverClass&gt;::<wbr /></span><span class="m-doc-wrap"><span class="m-doc-wrap-bumper"><a href="#adf3509558e971d118b4481df867db374" class="m-doc-self">currentStateName</a>(</span><span class="m-doc-wrap">) const</span></span>
+            </h3>
+            <p>Retrieve class name of currently active state.</p>
+<p>If the FSM is not running (i.e. no state has been set with <a href="classnimbro__fsm2_1_1FSM.html#ac5f535cffc8453ac4b525d0f0b13ece0" class="m-doc">setState</a>), this will return <code>std::string{}</code>.</p>
+          </div></section>
+          <section class="m-doc-details" id="a787d270ada36aab66fffc12099ddcec9"><div>
+            <h3>
+              <div class="m-doc-template">
+                template&lt;class DriverClass&gt;
+              </div>
+              <span class="m-doc-wrap-bumper">const Info&amp; nimbro_fsm2::<wbr />FSM&lt;DriverClass&gt;::<wbr /></span><span class="m-doc-wrap"><span class="m-doc-wrap-bumper"><a href="#a787d270ada36aab66fffc12099ddcec9" class="m-doc-self">stateInfo</a>(</span><span class="m-doc-wrap">) const</span></span>
+            </h3>
+            <p>Information on states &amp; transitions.</p>
+<p>This returns a ROS message instance with the list of states and possible transitions.</p><aside class="m-note m-info"><h4>Note</h4><p>You will need to call <a href="classnimbro__fsm2_1_1FSM.html#a1286cf22a68dea59b1bf4800ac973884" class="m-doc">initialize()</a> first, otherwise the result will be empty.</p></aside>
+          </div></section>
+          <section class="m-doc-details" id="a3221e055baa4f5fb69b3f486c58ecc44"><div>
+            <h3>
+              <div class="m-doc-template">
+                template&lt;class DriverClass&gt;
+              </div>
+              <span class="m-doc-wrap-bumper">bool nimbro_fsm2::<wbr />FSM&lt;DriverClass&gt;::<wbr /></span><span class="m-doc-wrap"><span class="m-doc-wrap-bumper"><a href="#a3221e055baa4f5fb69b3f486c58ecc44" class="m-doc-self">isTransitionAllowed</a>(</span><span class="m-doc-wrap">] const std::string_view&amp; newState) <span class="m-label m-warning">virtual</span> <span class="m-label m-warning">protected</span></span></span>
+            </h3>
+            <p>Transition checking hook.</p>
+<p>If you want to deny certain transitions, you can do so by overriding this method.</p>
+          </div></section>
+        </section>
+      </div>
+    </div>
+  </div>
+</article></main>
+<div class="m-doc-search" id="search">
+  <a href="#!" onclick="return hideSearch()"></a>
+  <div class="m-container">
+    <div class="m-row">
+      <div class="m-col-m-8 m-push-m-2">
+        <div class="m-doc-search-header m-text m-small">
+          <div><span class="m-label m-default">Tab</span> / <span class="m-label m-default">T</span> to search, <span class="m-label m-default">Esc</span> to close</div>
+          <div id="search-symbolcount">&hellip;</div>
+        </div>
+        <div class="m-doc-search-content">
+          <form>
+            <input type="search" name="q" id="search-input" placeholder="Loading &hellip;" disabled="disabled" autofocus="autofocus" autocomplete="off" spellcheck="false" />
+          </form>
+          <noscript class="m-text m-danger m-text-center">Unlike everything else in the docs, the search functionality <em>requires</em> JavaScript.</noscript>
+          <div id="search-help" class="m-text m-dim m-text-center">
+            <p class="m-noindent">Search for symbols, directories, files and pages. You can omit any prefix from the symbol or file path; adding a <code>:</code> or <code>/</code> suffix lists all members of given symbol or directory.</p> <p class="m-noindent">Use <span class="m-label m-dim">&darr;</span> / <span class="m-label m-dim">&uarr;</span> to navigate through the list, <span class="m-label m-dim">Enter</span> to go. <span class="m-label m-dim">Tab</span> autocompletes common prefix, you can copy a link to the result using <span class="m-label m-dim">⌘</span> <span class="m-label m-dim">L</span> while <span class="m-label m-dim">⌘</span> <span class="m-label m-dim">M</span> produces a Markdown link.</p>
+          </div>
+          <div id="search-notfound" class="m-text m-warning m-text-center">Sorry, nothing was found.</div>
+          <ul id="search-results"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="search-v1.js"></script>
+<script src="searchdata-v1.js" async="async"></script>
+<footer><nav>
+  <div class="m-container">
+    <div class="m-row">
+      <div class="m-col-l-10 m-push-l-1">
+        <p>nimbro_fsm2 docs.<br />Generated by <a href="https://doxygen.org/">Doxygen</a> 1.8.17 and <a href="https://mcss.mosra.cz/">m.css</a>.</p>
+      </div>
+    </div>
+  </div>
+</nav></footer>
+</body>
+</html>
