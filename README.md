@@ -3,4 +3,9 @@
 
 C++17 Finite State Machine framework
 
-See http://nimbroshared.pages.ais.uni-bonn.de/nimbro_fsm2/ for documentation.
+See https://ais-bonn.github.io/nimbro_fsm2/ for documentation.
+
+# License
+
+nimbro_fsm2 is provided under the terms of the MIT license (see LICENSE)
+
